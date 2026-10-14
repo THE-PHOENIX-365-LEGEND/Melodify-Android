@@ -11,6 +11,9 @@ import android.util.Log
 import dev.melodify.uranophilelab.utils.MusicPlayerManager
 import java.lang.ref.WeakReference
 
+import androidx.core.app.NotificationCompat
+import dev.melodify.uranophilelab.R
+
 class MusicService : Service() {
     private val mBinder: IBinder = MyBinder()
 
@@ -43,19 +46,29 @@ class MusicService : Service() {
             get() = this@MusicService
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val notification = MusicPlayerManager.latestNotification
+    private fun createFallbackNotification(): android.app.Notification {
+        val channelId = MusicPlayerManager.CHANNEL_ID_1
+        val title = MusicPlayerManager.MUSIC_TITLE?.ifEmpty { "Melodify" } ?: "Melodify"
+        val desc = MusicPlayerManager.MUSIC_DESCRIPTION?.ifEmpty { "Playback active" } ?: "Playback active"
+        return NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.headphone)
+            .setContentTitle(title)
+            .setContentText(desc)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+    }
 
-        if (notification != null) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-                } else {
-                    startForeground(1, notification)
-                }
-            } catch (e: Exception) {
-                Log.e("MusicService", "Error starting foreground", e)
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val notification = MusicPlayerManager.latestNotification ?: createFallbackNotification()
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(1, notification)
             }
+        } catch (e: Exception) {
+            Log.e("MusicService", "Error starting foreground service", e)
         }
 
         if (intent == null) return START_STICKY

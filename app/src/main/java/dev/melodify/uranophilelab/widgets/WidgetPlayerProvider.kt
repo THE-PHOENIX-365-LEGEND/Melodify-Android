@@ -28,6 +28,31 @@ class WidgetPlayerProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        for (appWidgetId in appWidgetIds) {
+            widgetTargets.remove(appWidgetId)?.let { target ->
+                try {
+                    Glide.with(context.applicationContext).clear(target)
+                } catch (e: Exception) {
+                    Log.e("WidgetPlayerProvider", "Error clearing widget target", e)
+                }
+            }
+        }
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        for ((_, target) in widgetTargets) {
+            try {
+                Glide.with(context.applicationContext).clear(target)
+            } catch (e: Exception) {
+                Log.e("WidgetPlayerProvider", "Error clearing widget target", e)
+            }
+        }
+        widgetTargets.clear()
+    }
+
     companion object {
         fun updateAllWidgets(context: Context) {
             val appWidgetManager = AppWidgetManager.getInstance(context)
