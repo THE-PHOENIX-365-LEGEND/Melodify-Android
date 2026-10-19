@@ -21,7 +21,7 @@ class AboutActivity : AppCompatActivity() {
         setSupportActionBar(b.toolbar)
         b.toolbar.setNavigationOnClickListener { finish() }
 
-        b.versionTxt.titleTextView?.text = BuildConfig.VERSION_NAME
+        b.versionTxt.titleTextView?.text = "Version - ${BuildConfig.VERSION_NAME}"
         b.versionTxt.setOnClickListener {
             Toast.makeText(this@AboutActivity, "Checking for updates...", Toast.LENGTH_SHORT).show()
             UpdateManager.checkForUpdates(this@AboutActivity, isManualCheck = true)

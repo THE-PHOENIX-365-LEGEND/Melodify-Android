@@ -89,14 +89,6 @@
         app:title="Downloads" />
 
     <dev.melodify.uranophilelab.utils.customview.BottomSheetItemView
-        android:id="@+id/settings"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:src="@drawable/settings_24px"
-        app:srcPadding="@dimen/_4sdp"
-        app:title="Settings and privacy" />
-
-    <dev.melodify.uranophilelab.utils.customview.BottomSheetItemView
         android:id="@+id/updates"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -124,7 +116,7 @@
         android:fontFamily="@font/avenir_next_regular"
         android:gravity="center"
         android:paddingStart="@dimen/_12sdp"
-        android:text="version 4.4.0"
+        android:text="version 5.0.0"
         android:textColor="#B3B3B3"
         tools:ignore="RtlSymmetry" />
 

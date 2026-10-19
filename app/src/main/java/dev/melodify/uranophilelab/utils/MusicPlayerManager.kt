@@ -69,9 +69,15 @@ object MusicPlayerManager {
     var latestNotification: android.app.Notification? = null
 
     var TRACK_QUALITY: String? = "320kbps"
+    var PLAYBACK_SPEED: Float = 1.0f
     var isTrackDownloaded: Boolean = false
     var trackQueue: MutableList<String?>? = ArrayList()
     var track_position: Int = -1
+
+    fun setPlaybackSpeed(speed: Float) {
+        PLAYBACK_SPEED = speed
+        player?.playbackParameters = androidx.media3.common.PlaybackParameters(speed)
+    }
 
     var MUSIC_TITLE: String? = ""
     var MUSIC_DESCRIPTION: String? = ""
@@ -226,7 +232,7 @@ object MusicPlayerManager {
         notificationManager?.cancel(1)
     }
 
-    private fun updateWidget() {
+    fun updateWidget() {
         appContext?.let { WidgetPlayerProvider.updateAllWidgets(it) }
     }
 
@@ -391,6 +397,7 @@ object MusicPlayerManager {
         val mediaItem = MediaItem.Builder().setUri(finalUrl).setMediaId(SONG_URL ?: "").build()
         isTrackDownloaded = false
         p.setMediaItem(mediaItem)
+        p.playbackParameters = androidx.media3.common.PlaybackParameters(PLAYBACK_SPEED)
         p.playWhenReady = true
         p.prepare()
         showNotification()

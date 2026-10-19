@@ -307,11 +307,6 @@ object AnimatedMenuHelper {
             context.startActivity(Intent(context, DownloadManagerActivity::class.java))
         }
 
-        dialogView.findViewById<View>(R.id.settings)?.setOnClickListener {
-            bottomSheetDialog.dismiss()
-            context.startActivity(Intent(context, SettingsActivity::class.java))
-        }
-
         dialogView.findViewById<View>(R.id.updates)?.setOnClickListener {
             bottomSheetDialog.dismiss()
             UpdateManager.checkForUpdates(context, isManualCheck = true)

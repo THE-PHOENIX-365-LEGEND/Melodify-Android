@@ -91,13 +91,85 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/popular_songs_section"
+                    android:id="@+id/recommendations_section"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/_12sdp"
                     android:orientation="vertical"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/recommendations_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/avenir_next_bold"
+                                android:includeFontPadding="false"
+                                android:text="Recommended For You"
+                                android:textColor="@color/textMain"
+                                android:textSize="@dimen/_16ssp" />
+
+                            <TextView
+                                android:id="@+id/recommendations_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/_2sdp"
+                                android:fontFamily="@font/avenir_next_regular"
+                                android:includeFontPadding="false"
+                                android:text="Based on your listening history"
+                                android:textColor="@color/textSec"
+                                android:textSize="@dimen/_11ssp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/recommendations_see_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="@font/avenir_next_bold"
+                            android:foreground="?attr/selectableItemBackgroundBorderless"
+                            android:padding="@dimen/_4sdp"
+                            android:text="See All"
+                            android:textColor="@color/spotify_green"
+                            android:textSize="@dimen/_12ssp" />
+
+                    </LinearLayout>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recommendations_recycler_view"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_8sdp"
+                        android:orientation="horizontal"
+                        android:scrollbars="none"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:itemCount="10"
+                        tools:listitem="@layout/activity_main_songs_item" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/popular_songs_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_12sdp"
+                    android:orientation="vertical"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/recommendations_section">
 
                     <TextView
                         android:layout_width="wrap_content"

@@ -18,17 +18,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import dev.melodify.uranophilelab.BaseApplicationClass
 import dev.melodify.uranophilelab.R
+import dev.melodify.uranophilelab.adapters.ActivityListSongsItemAdapter
 import dev.melodify.uranophilelab.adapters.ActivityMainAlbumItemAdapter
 import dev.melodify.uranophilelab.adapters.ActivityMainArtistsItemAdapter
 import dev.melodify.uranophilelab.adapters.ActivityMainPlaylistAdapter
 import dev.melodify.uranophilelab.adapters.ActivityMainPopularSongs
+import dev.melodify.uranophilelab.adapters.ActivityMainTrendingAdapter
 import dev.melodify.uranophilelab.adapters.SavedLibrariesAdapter
 import dev.melodify.uranophilelab.databinding.ActivityMainBinding
-import dev.melodify.uranophilelab.utils.UpdateManager
+import dev.melodify.uranophilelab.databinding.RecommendationsBottomSheetBinding
 import dev.melodify.uranophilelab.model.AlbumItem
 import dev.melodify.uranophilelab.network.ApiManager
 import dev.melodify.uranophilelab.network.NetworkChangeReceiver
@@ -37,13 +40,15 @@ import dev.melodify.uranophilelab.network.utility.RequestNetwork
 import dev.melodify.uranophilelab.records.AlbumsSearch
 import dev.melodify.uranophilelab.records.ArtistsSearch
 import dev.melodify.uranophilelab.records.PlaylistsSearch
+import dev.melodify.uranophilelab.records.SongResponse
 import dev.melodify.uranophilelab.records.SongSearch
+import dev.melodify.uranophilelab.utils.AnimatedMenuHelper
 import dev.melodify.uranophilelab.utils.MiniPlayerHelper
 import dev.melodify.uranophilelab.utils.MusicPlayerManager
+import dev.melodify.uranophilelab.utils.RecommendationManager
 import dev.melodify.uranophilelab.utils.SharedPreferenceManager
+import dev.melodify.uranophilelab.utils.UpdateManager
 import dev.melodify.uranophilelab.utils.attachSnapHelper
-import dev.melodify.uranophilelab.adapters.ActivityMainTrendingAdapter
-import dev.melodify.uranophilelab.utils.AnimatedMenuHelper
 import me.everything.android.ui.overscroll.OverScrollDecoratorHelper
 import org.json.JSONException
 import org.json.JSONObject
@@ -58,6 +63,9 @@ class MainActivity : AppCompatActivity() {
     val artists: MutableList<ArtistsSearch.Data.Results?> = ArrayList<ArtistsSearch.Data.Results?>()
     val albums: MutableList<AlbumItem?> = ArrayList<AlbumItem?>()
     val playlists: MutableList<AlbumItem?> = ArrayList<AlbumItem?>()
+    val recommendedSongs: MutableList<AlbumItem?> = ArrayList<AlbumItem?>()
+    private var recommendationTitle: String = "Recommended For You"
+    private var recommendationSubtitle: String = "Tailored track recommendations"
 
     var networkChangeReceiver: NetworkChangeReceiver =
         NetworkChangeReceiver(object : NetworkStatusListener {
@@ -97,10 +105,16 @@ class MainActivity : AppCompatActivity() {
             AnimatedMenuHelper.showAnimatedHomeMenu(this)
         }
 
+        val openRecommendationsSheet = { showRecommendationsBottomSheet() }
+        inflatedBinding.recommendationsSeeAll?.setOnClickListener { openRecommendationsSheet() }
+        inflatedBinding.recommendationsTitle?.setOnClickListener { openRecommendationsSheet() }
+
         val span: Int = calculateNoOfColumns(this, 200f)
         inflatedBinding.playlistRecyclerView.layoutManager = GridLayoutManager(this, span)
         inflatedBinding.trendingRecyclerView?.layoutManager = GridLayoutManager(this, 2)
 
+        inflatedBinding.recommendationsRecyclerView?.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         inflatedBinding.popularSongsRecyclerView.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
         inflatedBinding.popularAlbumsRecyclerView.layoutManager =
@@ -109,10 +123,14 @@ class MainActivity : AppCompatActivity() {
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
 
         // Snap helpers — smooth magnetic scroll on all horizontal lists
+        inflatedBinding.recommendationsRecyclerView?.attachSnapHelper()
         inflatedBinding.popularSongsRecyclerView.attachSnapHelper()
         inflatedBinding.popularAlbumsRecyclerView.attachSnapHelper()
         inflatedBinding.savedRecyclerView.attachSnapHelper()
 
+        inflatedBinding.recommendationsRecyclerView?.let {
+            OverScrollDecoratorHelper.setUpOverScroll(it, OverScrollDecoratorHelper.ORIENTATION_HORIZONTAL)
+        }
         OverScrollDecoratorHelper.setUpOverScroll(
             inflatedBinding.popularSongsRecyclerView,
             OverScrollDecoratorHelper.ORIENTATION_HORIZONTAL
@@ -221,6 +239,21 @@ class MainActivity : AppCompatActivity() {
         artists.clear()
         albums.clear()
         playlists.clear()
+
+        RecommendationManager.getHomePersonalizedRecommendations(this) { title, subtitle, items ->
+            val currentBinding = binding ?: return@getHomePersonalizedRecommendations
+            recommendedSongs.clear()
+            recommendedSongs.addAll(items)
+            recommendationTitle = title
+            recommendationSubtitle = subtitle
+
+            currentBinding.recommendationsTitle?.text = title
+            currentBinding.recommendationsSubtitle?.text = subtitle
+
+            val recAdapter = ActivityMainPopularSongs(recommendedSongs)
+            currentBinding.recommendationsRecyclerView?.adapter = recAdapter
+            recAdapter.notifyDataSetChanged()
+        }
 
         val songSeeds = listOf("2023", "2024", "2025", "2026", "Hits", "Latest", "Romantic", "Chill", "Lo-Fi", "Dance", "Hindi", "Sad", "Love", "Workout")
         val artistSeeds = listOf("Arijit", "Taylor", "Drake", "BTS", "Ed Sheeran", "Shreya", "Justin", "Badshah")
@@ -416,6 +449,7 @@ class MainActivity : AppCompatActivity() {
                 )
             )
         }
+        currentBinding.recommendationsRecyclerView?.adapter = ActivityMainAlbumItemAdapter(dataShimmer)
         currentBinding.popularSongsRecyclerView.adapter = ActivityMainAlbumItemAdapter(dataShimmer)
         currentBinding.popularAlbumsRecyclerView.adapter = ActivityMainAlbumItemAdapter(dataShimmer)
         currentBinding.popularArtistsRecyclerView?.adapter = ActivityMainArtistsItemAdapter(artistsShimmer)
@@ -575,6 +609,83 @@ class MainActivity : AppCompatActivity() {
             else -> "Good Night"
         }
         binding?.greetingText?.text = greeting
+    }
+
+    private fun showRecommendationsBottomSheet() {
+        if (recommendedSongs.isEmpty()) return
+        try {
+            val bottomSheetDialog = BottomSheetDialog(this, R.style.MyBottomSheetDialogTheme)
+            val sheetBinding = RecommendationsBottomSheetBinding.inflate(layoutInflater)
+
+            sheetBinding.sheetTitle.text = recommendationTitle
+            sheetBinding.sheetSubtitle.text = recommendationSubtitle
+
+            sheetBinding.closeSheetBtn.setOnClickListener {
+                bottomSheetDialog.dismiss()
+            }
+
+            sheetBinding.playAllRecommended.setOnClickListener {
+                val trackIds = recommendedSongs.mapNotNull { it?.id }
+                if (trackIds.isNotEmpty()) {
+                    MusicPlayerManager.trackQueue = trackIds.toMutableList()
+                    MusicPlayerManager.track_position = 0
+                    MusicPlayerManager.MUSIC_ID = trackIds[0]
+                    MusicPlayerManager.playTrack()
+                    startActivity(Intent(this, MusicOverviewActivity::class.java))
+                    bottomSheetDialog.dismiss()
+                }
+            }
+
+            sheetBinding.queueAllRecommended.setOnClickListener {
+                val trackIds = recommendedSongs.mapNotNull { it?.id }
+                val currentQueue = MusicPlayerManager.trackQueue ?: mutableListOf()
+                var addedCount = 0
+                trackIds.forEach { id ->
+                    if (!currentQueue.contains(id)) {
+                        currentQueue.add(id)
+                        addedCount++
+                    }
+                }
+                MusicPlayerManager.trackQueue = currentQueue
+                Toast.makeText(this, "Added $addedCount songs to queue", Toast.LENGTH_SHORT).show()
+                bottomSheetDialog.dismiss()
+            }
+
+            sheetBinding.recommendationsSheetRecyclerView.layoutManager = LinearLayoutManager(this)
+            val adapter = ActivityListSongsItemAdapter(
+                recommendedSongs.mapNotNull { item ->
+                    if (item != null) {
+                        SongResponse.Song(
+                            id = item.id,
+                            name = item.albumTitle,
+                            type = "song",
+                            year = null,
+                            releaseDate = null,
+                            duration = null,
+                            label = null,
+                            explicitContent = false,
+                            playCount = null,
+                            language = item.albumSubTitle,
+                            hasLyrics = false,
+                            lyricsId = null,
+                            lyrics = null,
+                            url = null,
+                            copyright = null,
+                            album = null,
+                            artists = null,
+                            image = mutableListOf(SongResponse.Image("high", item.albumCover)),
+                            downloadUrl = null
+                        )
+                    } else null
+                }.toMutableList()
+            )
+            sheetBinding.recommendationsSheetRecyclerView.adapter = adapter
+
+            bottomSheetDialog.setContentView(sheetBinding.root)
+            bottomSheetDialog.show()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing recommendations bottom sheet: ", e)
+        }
     }
 
 

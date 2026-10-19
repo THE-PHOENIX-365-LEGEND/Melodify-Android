@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="@dimen/_10sdp"
+        android:paddingHorizontal="@dimen/_12sdp"
         android:paddingVertical="@dimen/_6sdp">
 
         <com.google.android.material.card.MaterialCardView

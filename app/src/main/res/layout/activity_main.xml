@@ -139,7 +139,78 @@
 
                 </LinearLayout>
 
-                <!-- Recent Played Section -->
+                <!-- Smart Recommendations Section -->
+                <LinearLayout
+                    android:id="@+id/recommendations_section"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/_14sdp"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/recommendations_title"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/avenir_next_bold"
+                                android:includeFontPadding="false"
+                                android:text="Recommended For You"
+                                android:textColor="@color/text_light"
+                                android:textSize="@dimen/_15ssp" />
+
+                            <TextView
+                                android:id="@+id/recommendations_subtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/_2sdp"
+                                android:fontFamily="@font/avenir_next_regular"
+                                android:includeFontPadding="false"
+                                android:text="Based on your listening history"
+                                android:textColor="#B3B3B3"
+                                android:textSize="@dimen/_10ssp" />
+
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/recommendations_see_all"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:fontFamily="@font/avenir_next_bold"
+                            android:foreground="?attr/selectableItemBackgroundBorderless"
+                            android:padding="@dimen/_4sdp"
+                            android:text="See All"
+                            android:textColor="#1DB954"
+                            android:textSize="@dimen/_11ssp" />
+
+                    </LinearLayout>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recommendations_recycler_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_8sdp"
+                        android:orientation="horizontal"
+                        android:scrollbars="none"
+                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                        tools:itemCount="10"
+                        tools:listitem="@layout/activity_main_songs_item" />
+
+                </LinearLayout>
+
+                <!-- Popular Songs Section -->
                 <LinearLayout
                     android:id="@+id/popular_songs_section"
                     android:layout_width="match_parent"
@@ -151,7 +222,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/avenir_next_bold"
                         android:includeFontPadding="false"
-                        android:text="Recent played"
+                        android:text="Popular songs"
                         android:textColor="@color/text_light"
                         android:textSize="@dimen/_15ssp" />
 
@@ -168,7 +239,7 @@
 
                 </LinearLayout>
 
-                <!-- Made For You / Popular Albums Section -->
+                <!-- Popular Albums Section -->
                 <LinearLayout
                     android:id="@+id/popular_albums_section"
                     android:layout_width="match_parent"
@@ -181,7 +252,7 @@
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/avenir_next_bold"
                         android:includeFontPadding="false"
-                        android:text="Made for you"
+                        android:text="Popular albums"
                         android:textColor="@color/text_light"
                         android:textSize="@dimen/_15ssp" />
 

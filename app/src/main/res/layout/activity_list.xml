@@ -26,6 +26,7 @@
         <ImageView
             android:layout_width="@dimen/_32sdp"
             android:layout_height="@dimen/_32sdp"
+            android:layout_marginStart="-4dp"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackgroundBorderless"
@@ -84,7 +85,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="@dimen/_12sdp"
             android:paddingTop="@dimen/_8sdp">
 
             <!-- Album Cover Card -->
@@ -115,6 +115,7 @@
                 android:id="@+id/albumTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingHorizontal="@dimen/_12sdp"
                 android:fontFamily="@font/avenir_next_bold"
                 android:text="Liked Songs"
                 android:textColor="@color/text_light"
@@ -124,6 +125,7 @@
                 android:id="@+id/albumSubTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingHorizontal="@dimen/_12sdp"
                 android:layout_marginTop="@dimen/_2sdp"
                 android:fontFamily="@font/avenir_next_regular"
                 android:text="Playlist"
@@ -135,6 +137,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/_10sdp"
+                android:paddingHorizontal="@dimen/_12sdp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -143,6 +146,7 @@
                     android:id="@+id/add_to_library"
                     android:layout_width="@dimen/_30sdp"
                     android:layout_height="@dimen/_30sdp"
+                    android:layout_marginStart="-4dp"
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackgroundBorderless"
@@ -224,100 +228,6 @@
                 </com.google.android.material.card.MaterialCardView>
 
             </LinearLayout>
-
-            <!-- Filter Chips Horizontal Scroll -->
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/_12sdp"
-                android:overScrollMode="never"
-                android:scrollbars="none">
-
-                <com.google.android.material.chip.ChipGroup
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:singleLine="true">
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="Chill"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="EDM"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="Rap"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="Pop"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="Folk"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="Indie"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="@font/avenir_next_bold"
-                        android:text="Classic"
-                        android:textColor="@color/chip_text_color"
-                        app:chipBackgroundColor="@color/chip_background_color"
-                        app:chipCornerRadius="999dp"
-                        app:chipStrokeColor="@color/chip_stroke_color"
-                        app:chipStrokeWidth="1dp" />
-
-                </com.google.android.material.chip.ChipGroup>
-
-            </HorizontalScrollView>
 
             <!-- Songs RecyclerView -->
             <androidx.recyclerview.widget.RecyclerView

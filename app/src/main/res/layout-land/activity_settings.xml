@@ -140,7 +140,7 @@
 
             </LinearLayout>
 
-            <!-- Second Column: Other and Theme -->
+            <!-- Second Column: Playback and Theme -->
             <LinearLayout
                 android:id="@+id/section_other"
                 android:layout_width="0dp"
@@ -154,26 +154,16 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Other"
+                    android:text="Playback"
                     android:paddingVertical="@dimen/_8sdp"
                     android:textColor="@color/textMain"
                     android:fontFamily="@font/avenir_next_bold"
                     android:textSize="@dimen/_14ssp" />
 
-                <dev.melodify.uranophilelab.utils.customview.MaterialCustomSwitch
-                    android:id="@+id/explicit"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:textHead="Allow explicit content"
-                    app:textOff="No explicit content will be listed or played."
-                    app:textOn="Explicit content (labelled as 18+) is playable."
-                    app:checked="true" />
-
                 <LinearLayout
                     android:id="@+id/track_quality_setting"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_12sdp"
                     android:orientation="vertical"
                     android:paddingVertical="@dimen/_6sdp"
                     android:paddingHorizontal="@dimen/_4sdp"
@@ -197,6 +187,98 @@
                         android:text="320kbps (Very High)"
                         android:textColor="@color/textSec"
                         android:textSize="@dimen/_11ssp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/playback_speed_setting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_6sdp"
+                    android:orientation="vertical"
+                    android:paddingVertical="@dimen/_6sdp"
+                    android:paddingHorizontal="@dimen/_4sdp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Variable Playback Speed"
+                        android:textColor="@color/textMain"
+                        android:fontFamily="@font/avenir_next_bold"
+                        android:textSize="@dimen/_13ssp" />
+
+                    <TextView
+                        android:id="@+id/playback_speed_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_2sdp"
+                        android:text="1.0x (Normal)"
+                        android:textColor="@color/textSec"
+                        android:textSize="@dimen/_11ssp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/sleep_timer_setting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_6sdp"
+                    android:orientation="vertical"
+                    android:paddingVertical="@dimen/_6sdp"
+                    android:paddingHorizontal="@dimen/_4sdp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sleep Timer"
+                        android:textColor="@color/textMain"
+                        android:fontFamily="@font/avenir_next_bold"
+                        android:textSize="@dimen/_13ssp" />
+
+                    <TextView
+                        android:id="@+id/sleep_timer_value"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_2sdp"
+                        android:text="Off"
+                        android:textColor="@color/textSec"
+                        android:textSize="@dimen/_11ssp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/equalizer_setting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_6sdp"
+                    android:orientation="vertical"
+                    android:paddingVertical="@dimen/_6sdp"
+                    android:paddingHorizontal="@dimen/_4sdp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Equalizer Shortcut"
+                        android:textColor="@color/textMain"
+                        android:fontFamily="@font/avenir_next_bold"
+                        android:textSize="@dimen/_13ssp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/_2sdp"
+                        android:text="One-tap access to system audio equalizer"
+                        android:textColor="@color/textSec"
+                        android:textSize="@dimen/_11sdp" />
 
                 </LinearLayout>
 
