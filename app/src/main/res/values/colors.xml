@@ -46,4 +46,8 @@
 
     <color name="widget_transparent_75">#BF0A0A0A</color>
 
+    <!-- Seekbar track colors -->
+    <color name="seekbar_track_background">#33000000</color>
+    <color name="seekbar_secondary_progress">#66000000</color>
+
 </resources>

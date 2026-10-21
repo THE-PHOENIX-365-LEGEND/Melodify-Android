@@ -325,7 +325,7 @@ class SettingsActivity : AppCompatActivity() {
             }
 
         var theme: String?
-            get() = sharedPreferences.getString("theme", "dark")
+            get() = sharedPreferences.getString("theme", "system")
             set(theme) {
                 sharedPreferences.edit { putString("theme", theme) }
             }

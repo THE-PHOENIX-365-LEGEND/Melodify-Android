@@ -531,10 +531,6 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
             startActivity(sendIntent)
         })
 
-        binding!!.globeIcon.setOnClickListener {
-            showPlaybackOptionsBottomSheet()
-        }
-
         binding!!.moreIcon.setOnClickListener(View.OnClickListener {
             val bottomSheetDialog = BottomSheetDialog(
                 this@MusicOverviewActivity,
@@ -645,6 +641,11 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
                         }
                     })
             })
+
+            _binding.playbackOptions.setOnClickListener {
+                bottomSheetDialog.dismiss()
+                showPlaybackOptionsBottomSheet()
+            }
 
             for (artist in artistsList) {
                 try {
@@ -865,8 +866,6 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         
         val primaryArtistName = song.artists?.primary?.firstOrNull()?.name()
         val albumName = song.album?.name()
-        val headerText = if (!albumName.isNullOrEmpty()) albumName else if (!primaryArtistName.isNullOrEmpty()) primaryArtistName else "MELODIFY"
-        binding!!.headerTitle.text = headerText.uppercase()
 
         binding!!.title.text = song.name()
         binding!!.description.text = if (!primaryArtistName.isNullOrEmpty()) primaryArtistName else song.copyright ?: ""
@@ -889,11 +888,6 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
                 imageUrl = IMAGE_URL
             )
         )
-
-        val sourceName = (song.source ?: "saavn").uppercase()
-        val streamQuality = SharedPreferenceManager.getInstance(this).getStreamQuality()
-        val qualityTag = if (streamQuality.equals("lossless", ignoreCase = true)) " • HI-RES LOSSLESS" else ""
-        binding?.headerTitle?.text = "PLAYING FROM $sourceName$qualityTag"
 
         if (MusicPlayerManager.MUSIC_ID != ID_FROM_EXTRA || MusicPlayerManager.player?.isPlaying != true || forced) {
             MusicPlayerManager.setMusicDetails(

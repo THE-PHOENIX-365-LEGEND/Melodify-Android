@@ -12,12 +12,12 @@
     <!-- Spotify Brand Green & Premium Colors -->
     <color name="ocean_blue">#1DB954</color>
     <color name="cyan_accent">#1DB954</color>
-    <color name="ocean_dark_blue">#122410</color>
+    <color name="ocean_dark_blue">#212121</color>
     <color name="spotify_green">#1DB954</color>
     <color name="spotify_black">#000000</color>
 
     <!-- Secondary colors -->
-    <color name="spotify_dark_green">#122410</color>
+    <color name="spotify_dark_green">#212121</color>
     <color name="spotify_light_green">#1DB954</color>
 
     <color name="activity_main_cta_button">#1DB954</color>
@@ -45,5 +45,9 @@
     <color name="gray_600">#757575</color>
 
     <color name="widget_transparent_75">#BF0A0A0A</color>
+
+    <!-- Seekbar track colors -->
+    <color name="seekbar_track_background">#33FFFFFF</color>
+    <color name="seekbar_secondary_progress">#66FFFFFF</color>
 
 </resources>

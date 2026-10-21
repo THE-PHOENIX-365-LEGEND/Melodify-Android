@@ -165,7 +165,13 @@ object MusicPlayerManager {
                         updateWidget()
                     }
                     Player.STATE_ENDED -> {
-                        nextTrack()
+                        val currentPos = player?.currentPosition ?: 0
+                        val duration = player?.duration ?: 0
+                        if (duration > 0 && currentPos >= duration - 1500) {
+                            nextTrack()
+                        } else {
+                            Log.w(TAG, "STATE_ENDED fired prematurely (pos: $currentPos, dur: $duration). Ignoring auto-skip.")
+                        }
                     }
                     else -> {
                         updateWidget()
@@ -180,7 +186,12 @@ object MusicPlayerManager {
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                Log.e(TAG, "Player error: ${error.message}")
+                Log.e(TAG, "Player error: ${error.message}", error)
+                appContext?.let { ctx ->
+                    android.os.Handler(android.os.Looper.getMainLooper()).post {
+                        android.widget.Toast.makeText(ctx, "Playback error: ${error.localizedMessage ?: "Unable to play track"}", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         })
 

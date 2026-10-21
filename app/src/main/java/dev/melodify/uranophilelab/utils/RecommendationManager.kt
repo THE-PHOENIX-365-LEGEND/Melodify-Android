@@ -144,92 +144,63 @@ object RecommendationManager {
 
         val sectionTitle = "Recommended For You"
 
-        if (songHistory.isNotEmpty()) {
-            val mostRecent = songHistory.first()
-            val songId = mostRecent.id
-            val songName = mostRecent.title ?: "your taste"
-            val artistName = mostRecent.artist ?: ""
+        val seedSongHistory = songHistory.firstOrNull() ?: favoriteSongs.firstOrNull()
+        if (seedSongHistory != null) {
+            val songId = seedSongHistory.id
+            val songName = seedSongHistory.title ?: "your taste"
+            val artistName = seedSongHistory.artist ?: ""
 
             val sectionSubtitle = if (artistName.isNotBlank() && !artistName.equals("Unknown", ignoreCase = true)) {
-                "Because you listened to $artistName"
+                if (songHistory.isNotEmpty()) "Because you listened to $artistName" else "Based on your favorite $artistName"
             } else {
                 "Based on $songName"
             }
 
             if (!songId.isNullOrEmpty()) {
-                apiManager.retrieveSongSuggestions(songId, 15, object : RequestNetwork.RequestListener {
-                    override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
-                        try {
-                            val songResponse = Gson().fromJson(response, SongResponse::class.java)
-                            val suggestions = songResponse?.data?.filterNotNull()
-                            if (songResponse?.success == true && !suggestions.isNullOrEmpty()) {
-                                val items = suggestions.map { s ->
-                                    val img = s.image?.lastOrNull()?.url ?: ""
-                                    AlbumItem(s.name(), "${s.language ?: ""} ${s.year ?: ""}".trim(), img, s.id, "song")
-                                }
-                                mainHandler.post { callback(sectionTitle, sectionSubtitle, items) }
-                                return
-                            }
-                        } catch (e: Exception) {
-                            Log.w(TAG, "Suggestions failed, fallback to search: ${e.message}")
-                        }
-                        fallbackSearchRecommendations(apiManager, songName, sectionTitle, sectionSubtitle, callback)
-                    }
+                val song = SongResponse.Song(
+                    id = songId,
+                    name = songName,
+                    type = "song",
+                    year = null,
+                    releaseDate = null,
+                    duration = null,
+                    label = null,
+                    explicitContent = false,
+                    playCount = null,
+                    language = null,
+                    hasLyrics = false,
+                    lyricsId = null,
+                    lyrics = null,
+                    url = null,
+                    copyright = null,
+                    album = null,
+                    artists = SongResponse.Artists(
+                        primary = if (artistName.isNotBlank()) mutableListOf(SongResponse.Artist(null, artistName, null, null, null, null)) else null,
+                        featured = null,
+                        all = null
+                    ),
+                    image = if (!seedSongHistory.imageUrl.isNullOrEmpty()) mutableListOf(SongResponse.Image(null, seedSongHistory.imageUrl)) else null,
+                    downloadUrl = null,
+                    source = "saavn"
+                )
 
-                    override fun onErrorResponse(tag: String?, message: String?) {
-                        fallbackSearchRecommendations(apiManager, songName, sectionTitle, sectionSubtitle, callback)
-                    }
-                })
-            } else {
-                fallbackSearchRecommendations(apiManager, songName, sectionTitle, sectionSubtitle, callback)
-            }
-        } else if (favoriteSongs.isNotEmpty()) {
-            val favSong = favoriteSongs.first()
-            val songName = favSong.title ?: "your favorites"
-            val artistName = favSong.artist ?: ""
-
-            val sectionSubtitle = if (artistName.isNotBlank()) {
-                "Based on your favorite $artistName"
-            } else {
-                "Based on your favorites"
-            }
-
-            fallbackSearchRecommendations(apiManager, if (artistName.isNotBlank()) artistName else songName, sectionTitle, sectionSubtitle, callback)
-        } else {
-            fallbackHomeTrending(apiManager, callback)
-        }
-    }
-
-    private fun fallbackSearchRecommendations(
-        apiManager: ApiManager,
-        query: String,
-        title: String,
-        subtitle: String,
-        callback: (title: String, subtitle: String, items: List<AlbumItem>) -> Unit
-    ) {
-        apiManager.searchSongs(query, 0, 15, object : RequestNetwork.RequestListener {
-            override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
-                try {
-                    val songSearch = Gson().fromJson(response, SongSearch::class.java)
-                    val results = songSearch?.data?.results?.filterNotNull()
-                    if (songSearch?.success == true && !results.isNullOrEmpty()) {
-                        val items = results.map { s ->
+                getRecommendationsForSong(context, song, limit = 15) { recommendedSongs ->
+                    if (recommendedSongs.isNotEmpty()) {
+                        val items = recommendedSongs.map { s ->
                             val img = s.image?.lastOrNull()?.url ?: ""
                             AlbumItem(s.name(), "${s.language ?: ""} ${s.year ?: ""}".trim(), img, s.id, "song")
                         }
-                        mainHandler.post { callback(title, subtitle, items) }
-                        return
+                        mainHandler.post { callback(sectionTitle, sectionSubtitle, items) }
+                    } else {
+                        fallbackHomeTrending(apiManager, callback)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Fallback search error: ${e.message}")
                 }
+            } else {
                 fallbackHomeTrending(apiManager, callback)
             }
-
-            override fun onErrorResponse(tag: String?, message: String?) {
-                fallbackHomeTrending(apiManager, callback)
-            }
-        })
+        } else {
+            fallbackHomeTrending(apiManager, callback)
+        }
     }
 
     private fun fallbackHomeTrending(

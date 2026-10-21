@@ -94,6 +94,13 @@
             app:title="Download"
             android:src="@drawable/baseline_download_for_offline_24"/>
 
+        <dev.melodify.uranophilelab.utils.customview.BottomSheetItemView
+            android:id="@+id/playback_options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:title="Playback Options"
+            android:src="@drawable/ic_globe"/>
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
