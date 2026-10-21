@@ -42,6 +42,7 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
@@ -114,11 +115,11 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         // --- Audio Streaming Quality ---
-        val qualities = arrayOf("320kbps", "160kbps", "96kbps", "48kbps", "12kbps")
-        val qualityLabels = arrayOf("320kbps (Very High)", "160kbps (High)", "96kbps (Medium)", "48kbps (Low)", "12kbps (Very Low)")
+        val qualities = arrayOf("lossless", "320kbps", "160kbps", "96kbps", "48kbps", "12kbps")
+        val qualityLabels = arrayOf("Lossless (24-bit / 96 kHz Hi-Res)", "320kbps (Very High)", "160kbps (High)", "96kbps (Medium)", "48kbps (Low)", "12kbps (Very Low)")
 
         fun updateQualityUI() {
-            val currentQuality = MusicPlayerManager.TRACK_QUALITY ?: "320kbps"
+            val currentQuality = sharedPreferenceManager.getStreamQuality()
             val index = qualities.indexOfFirst { it.equals(currentQuality, ignoreCase = true) }
             val label = if (index >= 0) qualityLabels[index] else currentQuality
             binding?.trackQualityValue?.text = label
@@ -127,15 +128,46 @@ class SettingsActivity : AppCompatActivity() {
         updateQualityUI()
 
         binding?.trackQualitySetting?.setOnClickListener {
-            val currentQuality = MusicPlayerManager.TRACK_QUALITY ?: "320kbps"
-            val selectedIndex = qualities.indexOfFirst { it.equals(currentQuality, ignoreCase = true) }.let { if (it < 0) 0 else it }
+            val currentQuality = sharedPreferenceManager.getStreamQuality()
+            val selectedIndex = qualities.indexOfFirst { it.equals(currentQuality, ignoreCase = true) }.let { if (it < 0) 1 else it }
 
             MaterialAlertDialogBuilder(this)
                 .setTitle("Audio Streaming Quality")
                 .setSingleChoiceItems(qualityLabels, selectedIndex) { dialog, which ->
                     val chosenQuality = qualities[which]
+                    sharedPreferenceManager.setStreamQuality(chosenQuality)
                     MusicPlayerManager.setTrackQuality(chosenQuality, sharedPreferenceManager)
                     updateQualityUI()
+                    dialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        // --- Preferred Music Provider ---
+        val providers = arrayOf("saavn")
+        val providerLabels = arrayOf("JioSaavn (Default)")
+
+        fun updateProviderUI() {
+            val currentProvider = sharedPreferenceManager.getPreferredProvider()
+            val index = providers.indexOfFirst { it.equals(currentProvider, ignoreCase = true) }
+            val label = if (index >= 0) providerLabels[index] else currentProvider
+            binding?.musicProviderValue?.text = label
+        }
+
+        updateProviderUI()
+
+        binding?.musicProviderSetting?.setOnClickListener {
+            val currentProvider = sharedPreferenceManager.getPreferredProvider()
+            val selectedIndex = providers.indexOfFirst { it.equals(currentProvider, ignoreCase = true) }.let { if (it < 0) 0 else it }
+
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Preferred Music Provider")
+                .setSingleChoiceItems(providerLabels, selectedIndex) { dialog, which ->
+                    val chosenProvider = providers[which]
+                    sharedPreferenceManager.setPreferredProvider(chosenProvider)
+                    updateProviderUI()
+                    Toast.makeText(this, "Search provider updated to ${providerLabels[which]}", Toast.LENGTH_SHORT).show()
                     dialog.dismiss()
                 }
                 .setNegativeButton("Cancel", null)
@@ -198,22 +230,9 @@ class SettingsActivity : AppCompatActivity() {
                 .show()
         }
 
-        // --- Equalizer Shortcut ---
+        // --- Equalizer ---
         binding?.equalizerSetting?.setOnClickListener {
-            try {
-                val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL).apply {
-                    putExtra(AudioEffect.EXTRA_AUDIO_SESSION, MusicPlayerManager.player?.audioSessionId ?: 0)
-                    putExtra(AudioEffect.EXTRA_PACKAGE_NAME, packageName)
-                    putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-                }
-                if (intent.resolveActivity(packageManager) != null) {
-                    startActivity(intent)
-                } else {
-                    Toast.makeText(this, "No equalizer app found on this device", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this, "Could not open equalizer: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+            dev.melodify.uranophilelab.dialogs.EqualizerBottomSheetDialog(this).show()
         }
 
         binding!!.themeChipGroup.check(if (settingsSharedPrefManager.theme == "light") R.id.light else if (settingsSharedPrefManager.theme == "system") R.id.system else R.id.dark)

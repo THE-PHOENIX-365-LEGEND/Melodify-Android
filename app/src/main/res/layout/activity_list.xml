@@ -73,6 +73,8 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:fillViewport="true"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         android:overScrollMode="never"
         android:scrollbars="none"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
@@ -84,6 +86,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:orientation="vertical"
             android:paddingTop="@dimen/_8sdp">
 
@@ -95,6 +99,8 @@
                 android:layout_gravity="center_horizontal"
                 android:layout_marginTop="@dimen/_4sdp"
                 android:layout_marginBottom="@dimen/_12sdp"
+                android:layout_marginHorizontal="@dimen/_8sdp"
+                android:stateListAnimator="@null"
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="@dimen/_10sdp"
                 app:cardElevation="@dimen/_8sdp"
@@ -129,7 +135,7 @@
                 android:layout_marginTop="@dimen/_2sdp"
                 android:fontFamily="@font/avenir_next_regular"
                 android:text="Playlist"
-                android:textColor="#B3B3B3"
+                android:textColor="@color/textSec"
                 android:textSize="@dimen/_11ssp" />
 
             <!-- Controls Row: Add to library, Download, Share, Shuffle, Play All in a single row -->
@@ -210,6 +216,7 @@
                     android:clickable="true"
                     android:focusable="true"
                     android:foreground="?attr/selectableItemBackground"
+                    android:stateListAnimator="@null"
                     app:cardBackgroundColor="#1DB954"
                     app:cardCornerRadius="999dp"
                     app:strokeWidth="0dp">

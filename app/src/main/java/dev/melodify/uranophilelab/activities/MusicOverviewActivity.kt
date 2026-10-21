@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.Configuration
 import android.content.res.ColorStateList
 import android.net.Uri
 import android.os.Bundle
@@ -805,21 +806,25 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
                     responseHeaders: HashMap<String?, Any?>?
                 ) {
                     if (isFinishing || isDestroyed || binding == null) return
-                    val songResponse =
-                        Gson().fromJson<SongResponse>(response, SongResponse::class.java)
-                    if (songResponse.success) {
-                        onSongFetched(songResponse)
-                        SharedPreferenceManager.getInstance(this@MusicOverviewActivity)
-                            .setSongResponseById(
-                                ID,
-                                songResponse
-                            )
-                    } else {
-                        val cached = SharedPreferenceManager.getInstance(this@MusicOverviewActivity).getSongResponseById(ID)
-                        if (cached != null) {
-                            onSongFetched(cached)
-                        } else {
-                            finish()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val songResponse = try {
+                            Gson().fromJson(response, SongResponse::class.java)
+                        } catch (e: Exception) { null }
+
+                        withContext(Dispatchers.Main) {
+                            if (isFinishing || isDestroyed || binding == null) return@withContext
+                            if (songResponse != null && songResponse.success) {
+                                onSongFetched(songResponse)
+                                SharedPreferenceManager.getInstance(this@MusicOverviewActivity)
+                                    .setSongResponseById(ID, songResponse)
+                            } else {
+                                val cached = SharedPreferenceManager.getInstance(this@MusicOverviewActivity).getSongResponseById(ID)
+                                if (cached != null) {
+                                    onSongFetched(cached)
+                                } else {
+                                    finish()
+                                }
+                            }
                         }
                     }
                 }
@@ -885,16 +890,17 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
             )
         )
 
-        SONG_URL = MusicPlayerManager.getDownloadUrl(downloadUrls)
-        updateFavoriteStatus()
+        val sourceName = (song.source ?: "saavn").uppercase()
+        val streamQuality = SharedPreferenceManager.getInstance(this).getStreamQuality()
+        val qualityTag = if (streamQuality.equals("lossless", ignoreCase = true)) " • HI-RES LOSSLESS" else ""
+        binding?.headerTitle?.text = "PLAYING FROM $sourceName$qualityTag"
 
         if (MusicPlayerManager.MUSIC_ID != ID_FROM_EXTRA || MusicPlayerManager.player?.isPlaying != true || forced) {
             MusicPlayerManager.setMusicDetails(
                 IMAGE_URL, binding!!.title.text.toString(),
                 binding!!.description.text.toString(), ID_FROM_EXTRA
             )
-            MusicPlayerManager.SONG_URL = SONG_URL
-            prepareMediaPLayer()
+            MusicPlayerManager.resolveStreamAndPlay(song, this)
         }
 
         fetchLyricsForCurrentSong(song)
@@ -993,20 +999,25 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
                             else -> 0xFF2A150D.toInt()
                         }
 
-                        val topColor = adjustColorDarkness(primaryColor, 0.65f)
-                        val centerColor = adjustColorDarkness(primaryColor, 0.20f)
-                        val bottomColor = Color.parseColor("#121212")
-
-                        val dynamicGradient = GradientDrawable(
-                            GradientDrawable.Orientation.TOP_BOTTOM,
-                            intArrayOf(topColor, centerColor, bottomColor)
-                        )
-
-                        val parentGroup = b.root as? ViewGroup
-                        if (parentGroup != null) {
-                            val changeBounds = ChangeBounds().apply { duration = 400 }
-                            TransitionManager.beginDelayedTransition(parentGroup, changeBounds)
+                        val isNight = isNightMode()
+                        val dynamicGradient = if (isNight) {
+                            val topColor = adjustColorDarkness(primaryColor, 0.65f)
+                            val centerColor = adjustColorDarkness(primaryColor, 0.20f)
+                            val bottomColor = Color.parseColor("#121212")
+                            GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                intArrayOf(topColor, centerColor, bottomColor)
+                            )
+                        } else {
+                            val topColor = adjustColorLightness(primaryColor, 0.25f, 0.95f)
+                            val centerColor = adjustColorLightness(primaryColor, 0.10f, 0.98f)
+                            val bottomColor = Color.parseColor("#FFFFFF")
+                            GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                intArrayOf(topColor, centerColor, bottomColor)
+                            )
                         }
+
                         b.main.background = dynamicGradient
                     }
                 }
@@ -1015,10 +1026,23 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
             })
     }
 
+    private fun isNightMode(): Boolean {
+        val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES
+    }
+
     private fun adjustColorDarkness(color: Int, factor: Float): Int {
         val hsv = FloatArray(3)
         Color.colorToHSV(color, hsv)
         hsv[2] = (hsv[2] * factor).coerceIn(0f, 1f)
+        return Color.HSVToColor(hsv)
+    }
+
+    private fun adjustColorLightness(color: Int, saturationFactor: Float, valueFactor: Float): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
+        hsv[1] = (hsv[1] * saturationFactor).coerceIn(0.05f, 0.40f)
+        hsv[2] = valueFactor.coerceIn(0.85f, 1.0f)
         return Color.HSVToColor(hsv)
     }
 
@@ -1095,7 +1119,8 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
             Log.e(TAG, "Exception in updateSeekbar", e)
         }
         if (!isFinishing && !isDestroyed) {
-            handler.postDelayed(runnable, 250)
+            val isPlaying = MusicPlayerManager.player?.isPlaying == true
+            handler.postDelayed(runnable, if (isPlaying) 250L else 1000L)
         }
     }
 
@@ -1109,6 +1134,7 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         val currentTitle = binding?.title?.text?.toString() ?: ""
         if (currentTitle != MusicPlayerManager.MUSIC_TITLE) {
             binding?.title?.text = MusicPlayerManager.MUSIC_TITLE
+            loadArtworkAndApplyDynamicTheme(MusicPlayerManager.IMAGE_URL)
 
             val currentTrackData = MusicPlayerManager.CURRENT_TRACK?.data?.getOrNull(0)
             if (currentTrackData != null && currentTitle.isNotEmpty()) {
@@ -1118,9 +1144,6 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
 
         if (binding?.description?.text?.toString() != MusicPlayerManager.MUSIC_DESCRIPTION) {
             binding?.description?.text = MusicPlayerManager.MUSIC_DESCRIPTION
-        }
-        if (!isFinishing && !isDestroyed && binding != null) {
-            loadArtworkAndApplyDynamicTheme(MusicPlayerManager.IMAGE_URL)
         }
         val p = MusicPlayerManager.player ?: return
         if (p.duration > 0) {
@@ -1287,6 +1310,7 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
 
         val speedItem = dialogView.findViewById<dev.melodify.uranophilelab.utils.customview.BottomSheetItemView>(R.id.playback_speed_item)
         val sleepItem = dialogView.findViewById<dev.melodify.uranophilelab.utils.customview.BottomSheetItemView>(R.id.sleep_timer_item)
+        val eqItem = dialogView.findViewById<dev.melodify.uranophilelab.utils.customview.BottomSheetItemView>(R.id.equalizer_item)
 
         fun updateItemLabels() {
             val currentSpeed = MusicPlayerManager.PLAYBACK_SPEED
@@ -1295,9 +1319,18 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
 
             val remainingTime = SleepTimerManager.getFormattedRemainingTime()
             sleepItem?.titleTextView?.text = "Sleep Timer ($remainingTime)"
+
+            val presetName = dev.melodify.uranophilelab.model.EqPresets.getPresetById(dev.melodify.uranophilelab.utils.EqualizerManager.currentPresetId)?.name ?: "Custom"
+            val eqStatus = if (dev.melodify.uranophilelab.utils.EqualizerManager.isEnabled) "On • $presetName" else "Off"
+            eqItem?.titleTextView?.text = "Equalizer ($eqStatus)"
         }
 
         updateItemLabels()
+
+        eqItem?.setOnClickListener {
+            bottomSheetDialog.dismiss()
+            dev.melodify.uranophilelab.dialogs.EqualizerBottomSheetDialog(this@MusicOverviewActivity).show()
+        }
 
         speedItem?.setOnClickListener {
             val speeds = arrayOf("0.5x", "0.75x", "1.0x (Normal)", "1.25x", "1.5x", "1.75x", "2.0x")

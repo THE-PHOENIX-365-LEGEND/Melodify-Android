@@ -8,7 +8,8 @@
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
-    app:cardBackgroundColor="#282828"
+    android:stateListAnimator="@null"
+    app:cardBackgroundColor="@color/spotify_dark_green"
     app:cardCornerRadius="@dimen/_4sdp"
     app:cardElevation="0dp"
     app:strokeWidth="0dp">
@@ -23,7 +24,7 @@
             android:id="@+id/trending_cover"
             android:layout_width="@dimen/_44sdp"
             android:layout_height="@dimen/_44sdp"
-            android:background="#333333"
+            android:background="@color/dividerBackground"
             android:scaleType="centerCrop"
             android:contentDescription="Cover" />
 

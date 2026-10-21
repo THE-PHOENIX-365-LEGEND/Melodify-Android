@@ -10,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.facebook.shimmer.ShimmerFrameLayout
 import com.google.android.material.card.MaterialCardView
@@ -149,14 +150,13 @@ class ActivitySearchListItemAdapter(private val data: MutableList<SearchListItem
         if (coverImageView != null) {
             val rawImageUrl: String? = item.coverImage
             val imageUrl = if (!rawImageUrl.isNullOrEmpty() && rawImageUrl.contains("50x50")) {
-                rawImageUrl.replace("50x50", "500x500")
+                rawImageUrl.replace("50x50", "150x150")
             } else rawImageUrl ?: ""
             val isInvalid = imageUrl.isBlank() || imageUrl == "<shimmer>" || imageUrl.contains("default") || imageUrl.contains("artist-default")
             if (!isInvalid) {
                 Glide.with(coverImageView.context).load(imageUrl)
                     .placeholder(R.drawable.headphone)
                     .error(R.drawable.headphone)
-                    .fitCenter()
                     .centerCrop().into(coverImageView)
             } else {
                 coverImageView.setImageResource(R.drawable.headphone)
@@ -164,13 +164,24 @@ class ActivitySearchListItemAdapter(private val data: MutableList<SearchListItem
         }
 
         holder.itemView.setOnClickListener {
+            val ctx = holder.itemView.context
+            val imm = ctx.getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+            imm?.hideSoftInputFromWindow(holder.itemView.windowToken, 0)
+            holder.itemView.clearFocus()
+            (ctx as? android.app.Activity)?.currentFocus?.clearFocus()
+
             val intent = Intent()
             intent.putExtra("id", item.id)
             when (item.type) {
                 SearchListItem.Type.SONG -> {
-                    MusicPlayerManager.trackQueue = mutableListOf(item.id)
-                    MusicPlayerManager.track_position = 0
-                    MusicPlayerManager.MUSIC_ID = item.id
+                    if (item.id.isNullOrEmpty()) return@setOnClickListener
+                    val songList = data.filter { it.type == SearchListItem.Type.SONG && !it.id.isNullOrEmpty() }
+                    val songIds: ArrayList<String?> = ArrayList(songList.map { it.id })
+                    val clickIndex = songIds.indexOf(item.id).let { if (it >= 0) it else 0 }
+
+                    MusicPlayerManager.trackQueue = if (songIds.isNotEmpty()) songIds else arrayListOf(item.id)
+                    MusicPlayerManager.track_position = clickIndex
+
                     intent.setClass(holder.itemView.context, MusicOverviewActivity::class.java)
                 }
 
@@ -204,6 +215,35 @@ class ActivitySearchListItemAdapter(private val data: MutableList<SearchListItem
             }
             holder.itemView.context.startActivity(intent)
         }
+    }
+
+    private class SearchDiffCallback(
+        private val oldList: List<SearchListItem>,
+        private val newList: List<SearchListItem>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldList.size
+        override fun getNewListSize(): Int = newList.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            val oldItem = oldList[oldItemPosition]
+            val newItem = newList[newItemPosition]
+            if (oldItem.id == "<shimmer>" || newItem.id == "<shimmer>") {
+                return oldItemPosition == newItemPosition
+            }
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition] == newList[newItemPosition]
+        }
+    }
+
+    fun updateData(newData: List<SearchListItem>) {
+        val diffCallback = SearchDiffCallback(data, newData)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        data.clear()
+        data.addAll(newData)
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun getItemCount(): Int {

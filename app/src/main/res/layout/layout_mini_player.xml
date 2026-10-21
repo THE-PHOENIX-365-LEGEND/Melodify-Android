@@ -69,7 +69,7 @@
                 android:ellipsize="marquee"
                 android:text="@string/app_name"
                 android:fontFamily="@font/avenir_next_regular"
-                android:textColor="#B3B3B3"
+                android:textColor="@color/textSec"
                 android:textSize="@dimen/_10ssp" />
 
         </LinearLayout>

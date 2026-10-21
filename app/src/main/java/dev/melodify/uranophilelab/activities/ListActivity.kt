@@ -3,7 +3,9 @@ package dev.melodify.uranophilelab.activities
 import android.annotation.SuppressLint
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.res.ColorStateList
+import androidx.core.content.ContextCompat
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -243,7 +245,7 @@ class ListActivity : AppCompatActivity() {
         }
 
         val isShuffle = player?.shuffleModeEnabled ?: false
-        val tintColor = if (isShuffle) Color.parseColor("#1DB954") else Color.WHITE
+        val tintColor = if (isShuffle) Color.parseColor("#1DB954") else ContextCompat.getColor(this, R.color.text_light)
         b.shuffleBtn?.imageTintList = ColorStateList.valueOf(tintColor)
     }
 
@@ -474,14 +476,24 @@ class ListActivity : AppCompatActivity() {
                             else -> 0xFF2A150D.toInt()
                         }
 
-                        val topColor = adjustColorDarkness(primaryColor, 0.65f)
-                        val centerColor = adjustColorDarkness(primaryColor, 0.20f)
-                        val bottomColor = Color.parseColor("#121212")
-
-                        val dynamicGradient = GradientDrawable(
-                            GradientDrawable.Orientation.TOP_BOTTOM,
-                            intArrayOf(topColor, centerColor, bottomColor)
-                        )
+                        val isNight = isNightMode()
+                        val dynamicGradient = if (isNight) {
+                            val topColor = adjustColorDarkness(primaryColor, 0.65f)
+                            val centerColor = adjustColorDarkness(primaryColor, 0.20f)
+                            val bottomColor = Color.parseColor("#121212")
+                            GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                intArrayOf(topColor, centerColor, bottomColor)
+                            )
+                        } else {
+                            val topColor = adjustColorLightness(primaryColor, 0.25f, 0.95f)
+                            val centerColor = adjustColorLightness(primaryColor, 0.10f, 0.98f)
+                            val bottomColor = Color.parseColor("#FFFFFF")
+                            GradientDrawable(
+                                GradientDrawable.Orientation.TOP_BOTTOM,
+                                intArrayOf(topColor, centerColor, bottomColor)
+                            )
+                        }
 
                         val parentGroup = b.root as? ViewGroup
                         if (parentGroup != null) {
@@ -496,10 +508,23 @@ class ListActivity : AppCompatActivity() {
             })
     }
 
+    private fun isNightMode(): Boolean {
+        val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        return nightModeFlags == Configuration.UI_MODE_NIGHT_YES
+    }
+
     private fun adjustColorDarkness(color: Int, factor: Float): Int {
         val hsv = FloatArray(3)
         Color.colorToHSV(color, hsv)
         hsv[2] = (hsv[2] * factor).coerceIn(0f, 1f)
+        return Color.HSVToColor(hsv)
+    }
+
+    private fun adjustColorLightness(color: Int, saturationFactor: Float, valueFactor: Float): Int {
+        val hsv = FloatArray(3)
+        Color.colorToHSV(color, hsv)
+        hsv[1] = (hsv[1] * saturationFactor).coerceIn(0.05f, 0.40f)
+        hsv[2] = valueFactor.coerceIn(0.85f, 1.0f)
         return Color.HSVToColor(hsv)
     }
 

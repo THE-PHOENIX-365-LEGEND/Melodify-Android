@@ -53,6 +53,13 @@
             android:src="@drawable/round_history_24"
             app:title="Sleep Timer" />
 
+        <dev.melodify.uranophilelab.utils.customview.BottomSheetItemView
+            android:id="@+id/equalizer_item"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:src="@drawable/headphone"
+            app:title="Equalizer" />
+
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

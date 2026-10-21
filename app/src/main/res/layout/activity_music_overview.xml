@@ -305,7 +305,7 @@
                     android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:padding="@dimen/_10sdp"
                     android:src="@drawable/play_arrow_24px"
-                    app:tint="@color/background_dark" />
+                    app:tint="@color/background" />
 
             </com.google.android.material.card.MaterialCardView>
 

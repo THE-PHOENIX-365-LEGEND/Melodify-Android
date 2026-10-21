@@ -7,13 +7,14 @@
     android:clickable="true"
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
+    android:stateListAnimator="@null"
     android:layout_marginHorizontal="@dimen/_4sdp"
     android:layout_marginVertical="@dimen/_4sdp"
     app:cardCornerRadius="@dimen/_10sdp"
     app:cardElevation="@dimen/_2sdp"
     app:strokeWidth="0.5dp"
-    app:strokeColor="@color/textSec"
-    app:cardBackgroundColor="@color/background">
+    app:strokeColor="@color/dividerBackground"
+    app:cardBackgroundColor="@color/spotify_dark_green">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -24,9 +25,10 @@
             android:id="@+id/cardView"
             android:layout_width="@dimen/_45sdp"
             android:layout_height="@dimen/_45sdp"
+            android:stateListAnimator="@null"
             app:cardCornerRadius="@dimen/_8sdp"
             app:strokeWidth="0.5dp"
-            app:strokeColor="@color/textSec"
+            app:strokeColor="@color/dividerBackground"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -75,4 +77,3 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>
-

@@ -99,6 +99,7 @@ object MusicPlayerManager {
         if (appContext != null) return
         appContext = context.applicationContext
         sharedPreferenceManager = SharedPreferenceManager.getInstance(appContext!!)
+        EqualizerManager.init(appContext!!)
 
         try {
             val cacheDir = File(appContext!!.cacheDir, "audio_cache")
@@ -139,11 +140,27 @@ object MusicPlayerManager {
             )
             .build()
 
+        player?.audioSessionId?.let { sessionId ->
+            if (sessionId != C.AUDIO_SESSION_ID_UNSET) {
+                EqualizerManager.attachAudioSession(sessionId)
+            }
+        }
+
         player?.addListener(object : Player.Listener {
+            override fun onAudioSessionIdChanged(audioSessionId: Int) {
+                Log.i(TAG, "Audio session ID changed to: $audioSessionId")
+                EqualizerManager.attachAudioSession(audioSessionId)
+            }
+
             override fun onPlaybackStateChanged(playbackState: Int) {
                 Log.i(TAG, "Player state changed to: ${getStateString(playbackState)}")
                 when (playbackState) {
                     Player.STATE_READY -> {
+                        player?.audioSessionId?.let { sessionId ->
+                            if (sessionId != C.AUDIO_SESSION_ID_UNSET) {
+                                EqualizerManager.attachAudioSession(sessionId)
+                            }
+                        }
                         player?.play()
                         updateWidget()
                     }
@@ -383,6 +400,133 @@ object MusicPlayerManager {
             showNotification() 
             updateWidget()
         }, 100)
+    }
+
+    fun resolveStreamAndPlay(song: SongResponse.Song, context: Context, onResolved: (() -> Unit)? = null) {
+        val prefs = SharedPreferenceManager.getInstance(context)
+        val quality = prefs.getStreamQuality()
+        val apiManager = ApiManager(context)
+
+        if (quality.equals("lossless", ignoreCase = true) && !song.id.isNullOrBlank()) {
+            val primaryArtist = song.artists?.primary?.firstOrNull()?.name() ?: ""
+            apiManager.resolveLosslessStream(
+                songId = song.id,
+                title = song.name(),
+                artist = primaryArtist,
+                duration = song.duration ?: 0.0,
+                source = song.source ?: "saavn",
+                quality = "lossless",
+                listener = object : RequestNetwork.RequestListener {
+                    override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
+                        try {
+                            if (!response.isNullOrBlank()) {
+                                val root = com.google.gson.JsonParser.parseString(response).asJsonObject
+                                if (root.has("data") && root.get("data").isJsonObject) {
+                                    val dataObj = root.getAsJsonObject("data")
+                                    val url = dataObj.get("url")?.asString
+                                    if (!url.isNullOrBlank()) {
+                                        SONG_URL = url
+                                        prepareMediaPlayer()
+                                        onResolved?.invoke()
+                                        return
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error parsing lossless response", e)
+                        }
+                        fallbackStreamResolution(song, apiManager, onResolved)
+                    }
+
+                    override fun onErrorResponse(tag: String?, message: String?) {
+                        fallbackStreamResolution(song, apiManager, onResolved)
+                    }
+                }
+            )
+            return
+        }
+
+        fallbackStreamResolution(song, apiManager, onResolved)
+    }
+
+    private fun fallbackStreamResolution(song: SongResponse.Song, apiManager: ApiManager, onResolved: (() -> Unit)?) {
+        SONG_URL = getDownloadUrl(song.downloadUrl)
+        if (SONG_URL.isNullOrBlank()) {
+            fetchSongDetailsAndPlay(song, apiManager, onResolved)
+        } else {
+            prepareMediaPlayer()
+            onResolved?.invoke()
+        }
+    }
+
+    private fun fetchSongDetailsAndPlay(song: SongResponse.Song, apiManager: ApiManager, onResolved: (() -> Unit)?) {
+        val songId = song.id
+        if (!songId.isNullOrBlank()) {
+            apiManager.retrieveSongById(songId, false, object : RequestNetwork.RequestListener {
+                override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
+                    try {
+                        if (!response.isNullOrBlank()) {
+                            val parsed = Gson().fromJson(response, dev.melodify.uranophilelab.records.SongResponse::class.java)
+                            val firstSong = parsed?.data?.firstOrNull()
+                            val url = getDownloadUrl(firstSong?.downloadUrl)
+                            if (url.isNotBlank()) {
+                                SONG_URL = url
+                                prepareMediaPlayer()
+                                onResolved?.invoke()
+                                return
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing song by ID response", e)
+                    }
+                    searchAndPlayByTitle(song, apiManager, onResolved)
+                }
+
+                override fun onErrorResponse(tag: String?, message: String?) {
+                    searchAndPlayByTitle(song, apiManager, onResolved)
+                }
+            })
+        } else {
+            searchAndPlayByTitle(song, apiManager, onResolved)
+        }
+    }
+
+    private fun searchAndPlayByTitle(song: SongResponse.Song, apiManager: ApiManager, onResolved: (() -> Unit)?) {
+        val title = song.name()
+        if (title.isBlank()) {
+            prepareMediaPlayer()
+            onResolved?.invoke()
+            return
+        }
+        val artist = song.artists?.primary?.firstOrNull()?.name() ?: ""
+        val queryStr = if (artist.isNotBlank()) "$title $artist" else title
+
+        apiManager.searchSongs(queryStr, 1, 5, object : RequestNetwork.RequestListener {
+            override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
+                try {
+                    if (!response.isNullOrBlank()) {
+                        val parsed = com.google.gson.Gson().fromJson(response, dev.melodify.uranophilelab.records.SongSearch::class.java)
+                        val match = parsed?.data?.results?.filterNotNull()?.firstOrNull()
+                        val url = getDownloadUrl(match?.downloadUrl)
+                        if (url.isNotBlank()) {
+                            SONG_URL = url
+                            prepareMediaPlayer()
+                            onResolved?.invoke()
+                            return
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error searching song for playback fallback", e)
+                }
+                prepareMediaPlayer()
+                onResolved?.invoke()
+            }
+
+            override fun onErrorResponse(tag: String?, message: String?) {
+                prepareMediaPlayer()
+                onResolved?.invoke()
+            }
+        })
     }
 
     fun prepareMediaPlayer() {
@@ -713,5 +857,25 @@ object MusicPlayerManager {
         Player.STATE_READY -> "READY"
         Player.STATE_ENDED -> "ENDED"
         else -> "UNKNOWN"
+    }
+
+    fun release() {
+        try {
+            notificationTarget?.let { target ->
+                appContext?.let { ctx -> Glide.with(ctx).clear(target) }
+            }
+            notificationTarget = null
+            mediaSession?.isActive = false
+            mediaSession?.release()
+            mediaSession = null
+            player?.stop()
+            player?.release()
+            player = null
+            simpleCache?.release()
+            simpleCache = null
+            appContext = null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error releasing MusicPlayerManager resources", e)
+        }
     }
 }

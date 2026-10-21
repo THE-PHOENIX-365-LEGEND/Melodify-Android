@@ -25,6 +25,13 @@ class ApiManager(context: Context?) {
         query: String, page: Int?, limit: Int?,
         listener: RequestNetwork.RequestListener
     ) {
+        performJioSaavnSongSearch(query, page, limit, listener)
+    }
+
+    fun performJioSaavnSongSearch(
+        query: String, page: Int?, limit: Int?,
+        listener: RequestNetwork.RequestListener
+    ) {
         val directUrl = "https://www.jiosaavn.com/api.php"
         val queryMap = HashMap<String?, Any?>()
         queryMap["__call"] = "search.getResults"
@@ -483,6 +490,33 @@ class ApiManager(context: Context?) {
         requestListener: RequestNetwork.RequestListener?
     ) {
         retrieveArtistAlbums(artistId, page, null, null, requestListener)
+    }
+
+    fun resolveLosslessStream(
+        songId: String,
+        title: String,
+        artist: String,
+        duration: Double,
+        source: String,
+        quality: String = "auto",
+        listener: RequestNetwork.RequestListener?
+    ) {
+        val bodyMap = HashMap<String?, Any?>()
+        bodyMap["quality"] = quality
+        bodyMap["song"] = mapOf(
+            "id" to songId,
+            "title" to title,
+            "subtitle" to artist,
+            "duration" to duration,
+            "source" to source
+        )
+        requestNetwork.setParams(bodyMap, RequestNetworkController.REQUEST_BODY)
+        requestNetwork.startRequestNetwork(
+            RequestNetworkController.POST,
+            BASE_URL + "lossless/stream-url",
+            "",
+            listener
+        )
     }
 
     enum class SortBy {
