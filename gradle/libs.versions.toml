@@ -28,6 +28,8 @@ kotlin = "2.3.20"
 coreKtx = "1.18.0"
 ktor = "2.3.11"
 hiddenapibypass = "4.3"
+ffmpegKit = "8.1.9"
+kotlinxCoroutines = "1.10.2"
 
 [libraries]
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "compiler" }
@@ -65,6 +67,8 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 ktor-client-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 hiddenapibypass = { module = "org.lsposed.hiddenapibypass:hiddenapibypass", version.ref = "hiddenapibypass" }
+ffmpeg-kit-audio = { module = "dev.ffmpegkit-maintained:ffmpeg-kit-audio", version.ref = "ffmpegKit" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 
 # Media3 Exoplayer related dependencies
 [bundles]

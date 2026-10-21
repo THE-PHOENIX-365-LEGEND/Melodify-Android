@@ -473,12 +473,44 @@ object MusicPlayerManager {
                     )
 
                     prepareMediaPlayer()
+
+                    val queue = trackQueue
+                    if (isAutoplayEnabled() && (queue.isNullOrEmpty() || track_position >= queue.size - 1)) {
+                        prefetchAutoplayRecommendations(firstSong)
+                    }
                 }
             }
             override fun onErrorResponse(tag: String?, message: String?) {
                 Log.e(TAG, "onErrorResponse in playTrack: $message")
             }
         })
+    }
+
+    private var isPrefetchingAutoplay = false
+
+    fun prefetchAutoplayRecommendations(song: SongResponse.Song) {
+        if (isPrefetchingAutoplay) return
+        val ctx = appContext ?: return
+        isPrefetchingAutoplay = true
+
+        Log.i(TAG, "Autoplay: Pre-fetching recommendations matching tone/vibe for seed: ${song.name()} (ID: ${song.id})")
+
+        RecommendationManager.getRecommendationsForSong(ctx, song, limit = 30) { recommendedSongs ->
+            isPrefetchingAutoplay = false
+            val existingQueue = trackQueue ?: mutableListOf()
+            val newTrackIds = recommendedSongs
+                .mapNotNull { it.id }
+                .filter { id -> !existingQueue.contains(id) }
+
+            if (newTrackIds.isNotEmpty()) {
+                Log.i(TAG, "Autoplay: Pre-fetched ${newTrackIds.size} recommended songs (same tone/vibe) into queue")
+                existingQueue.addAll(newTrackIds)
+                trackQueue = existingQueue
+                updateWidget()
+            } else {
+                Log.i(TAG, "Autoplay: No new pre-fetched recommendation IDs found")
+            }
+        }
     }
 
     private var isFetchingAutoplay = false
@@ -494,52 +526,114 @@ object MusicPlayerManager {
         val ctx = appContext ?: return
         val currentSong = CURRENT_TRACK?.data?.firstOrNull()
 
-        val primaryArtist = currentSong?.artists?.primary?.filterNotNull()?.firstOrNull()?.name()
-        val queryStr: String = if (!primaryArtist.isNullOrBlank()) primaryArtist else if (!MUSIC_TITLE.isNullOrBlank()) MUSIC_TITLE!! else "popular"
-
         isFetchingAutoplay = true
-        Log.i(TAG, "Autoplay: Requesting recommendations for seed: $queryStr")
+        Log.i(TAG, "Autoplay: Requesting recommendations matching tone/vibe for seed: ${MUSIC_TITLE} (ID: ${MUSIC_ID})")
 
-        ApiManager(ctx).searchSongs(queryStr, 1, 15, object : RequestNetwork.RequestListener {
+        val processRecommendedSongs: (List<SongResponse.Song>) -> Unit = { recommendedSongs ->
+            isFetchingAutoplay = false
+            val existingQueue = trackQueue ?: mutableListOf()
+
+            val newTrackIds = recommendedSongs
+                .mapNotNull { it.id }
+                .filter { id -> !existingQueue.contains(id) }
+
+            if (newTrackIds.isNotEmpty()) {
+                Log.i(TAG, "Autoplay: Appended ${newTrackIds.size} recommended songs (same tone/vibe) to queue")
+                existingQueue.addAll(newTrackIds)
+                trackQueue = existingQueue
+
+                track_position++
+                if (track_position in 0 until trackQueue!!.size) {
+                    MUSIC_ID = trackQueue!![track_position]
+                    playTrack()
+                    showNotification()
+                    updateWidget()
+                }
+            } else {
+                Log.i(TAG, "Autoplay: No new recommendation IDs found")
+            }
+        }
+
+        if (currentSong != null) {
+            RecommendationManager.getRecommendationsForSong(ctx, currentSong, limit = 30) { songs ->
+                if (songs.isNotEmpty()) {
+                    processRecommendedSongs(songs)
+                } else {
+                    fallbackAutoplaySearch(ctx, processRecommendedSongs)
+                }
+            }
+        } else if (!MUSIC_ID.isNullOrEmpty()) {
+            ApiManager(ctx).retrieveSongSuggestions(MUSIC_ID!!, 30, object : RequestNetwork.RequestListener {
+                override fun onResponse(
+                    tag: String?,
+                    response: String?,
+                    responseHeaders: HashMap<String?, Any?>?
+                ) {
+                    try {
+                        val songResponse = Gson().fromJson(response, SongResponse::class.java)
+                        val suggestions = songResponse?.data?.filterNotNull()
+                        if (songResponse?.success == true && !suggestions.isNullOrEmpty()) {
+                            processRecommendedSongs(suggestions)
+                            return
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Autoplay suggestions parsing failed: ${e.message}")
+                    }
+                    fallbackAutoplaySearch(ctx, processRecommendedSongs)
+                }
+
+                override fun onErrorResponse(tag: String?, message: String?) {
+                    fallbackAutoplaySearch(ctx, processRecommendedSongs)
+                }
+            })
+        } else {
+            fallbackAutoplaySearch(ctx, processRecommendedSongs)
+        }
+    }
+
+    private fun fallbackAutoplaySearch(
+        ctx: Context,
+        callback: (List<SongResponse.Song>) -> Unit
+    ) {
+        val currentSong = CURRENT_TRACK?.data?.firstOrNull()
+        val primaryArtist = currentSong?.artists?.primary?.filterNotNull()?.firstOrNull()?.name()
+        val language = currentSong?.language ?: ""
+
+        val queryStr: String = when {
+            !primaryArtist.isNullOrBlank() && language.isNotBlank() -> "$primaryArtist $language"
+            !primaryArtist.isNullOrBlank() -> primaryArtist
+            !MUSIC_TITLE.isNullOrBlank() && language.isNotBlank() -> "${MUSIC_TITLE!!} $language"
+            !MUSIC_TITLE.isNullOrBlank() -> MUSIC_TITLE!!
+            else -> "popular"
+        }
+
+        Log.i(TAG, "Autoplay fallback: Requesting search for seed: $queryStr")
+
+        ApiManager(ctx).searchSongs(queryStr, 1, 30, object : RequestNetwork.RequestListener {
             override fun onResponse(
                 tag: String?,
                 response: String?,
                 responseHeaders: HashMap<String?, Any?>?
             ) {
                 isFetchingAutoplay = false
-                if (response.isNullOrEmpty()) return
+                if (response.isNullOrEmpty()) {
+                    callback(emptyList())
+                    return
+                }
                 try {
                     val songSearch = Gson().fromJson(response, dev.melodify.uranophilelab.records.SongSearch::class.java)
                     val results = songSearch?.data?.results?.filterNotNull() ?: emptyList()
-                    val existingQueue = trackQueue ?: mutableListOf()
-
-                    val newTrackIds = results
-                        .mapNotNull { item: SongResponse.Song? -> item?.id }
-                        .filter { id -> !existingQueue.contains(id) }
-
-                    if (newTrackIds.isNotEmpty()) {
-                        Log.i(TAG, "Autoplay: Appended ${newTrackIds.size} recommended songs to queue")
-                        existingQueue.addAll(newTrackIds)
-                        trackQueue = existingQueue
-
-                        track_position++
-                        if (track_position in 0 until trackQueue!!.size) {
-                            MUSIC_ID = trackQueue!![track_position]
-                            playTrack()
-                            showNotification()
-                            updateWidget()
-                        }
-                    } else {
-                        Log.i(TAG, "Autoplay: No new recommendation IDs found")
-                    }
+                    callback(results)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Autoplay error parsing recommendations", e)
+                    Log.e(TAG, "Autoplay fallback search parsing error", e)
+                    callback(emptyList())
                 }
             }
 
             override fun onErrorResponse(tag: String?, message: String?) {
                 isFetchingAutoplay = false
-                Log.e(TAG, "Autoplay network error: $message")
+                Log.e(TAG, "Autoplay fallback network error: $message")
+                callback(emptyList())
             }
         })
     }
@@ -562,11 +656,7 @@ object MusicPlayerManager {
                 }
             }
         } else {
-            if (p.shuffleModeEnabled && queue.size > 1) {
-                var newPos: Int
-                do { newPos = (Math.random() * queue.size).toInt() } while (newPos == track_position && queue.size > 1)
-                track_position = newPos
-            } else { track_position++ }
+            track_position++
         }
 
         val targetId = queue.getOrNull(track_position)
@@ -591,9 +681,7 @@ object MusicPlayerManager {
             if (p.repeatMode == Player.REPEAT_MODE_ALL) track_position = queue.size - 1
             else { p.seekTo(0); p.play(); return }
         } else {
-            if (p.shuffleModeEnabled && queue.size > 1) {
-                track_position = (Math.random() * queue.size).toInt()
-            } else { track_position-- }
+            track_position--
         }
 
         val targetId = queue.getOrNull(track_position)
@@ -602,6 +690,20 @@ object MusicPlayerManager {
             playTrack()
             showNotification()
             updateWidget()
+        }
+    }
+
+    fun shuffleCurrentQueue(artistMap: Map<String, String?>? = null) {
+        val currentQueue = trackQueue?.filterNotNull() ?: return
+        if (currentQueue.size <= 1) return
+        val currentTrackId = MUSIC_ID
+        val shuffled = ShuffleUtil.shuffleTrackIds(currentQueue, artistMap)
+        trackQueue = shuffled.toMutableList()
+        if (currentTrackId != null) {
+            val newPos = trackQueue?.indexOf(currentTrackId) ?: -1
+            track_position = if (newPos != -1) newPos else 0
+        } else {
+            track_position = 0
         }
     }
 

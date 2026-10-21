@@ -23,24 +23,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <ImageView
-            android:id="@+id/back_button"
-            android:layout_width="@dimen/_32sdp"
-            android:layout_height="@dimen/_32sdp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:onClick="backPress"
-            android:padding="@dimen/_4sdp"
-            android:src="@drawable/round_keyboard_arrow_down_24"
-            app:tint="@color/text_light"
-            android:contentDescription="@string/collapse" />
-
         <TextView
             android:id="@+id/headerTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:layout_marginStart="@dimen/_60sdp"
             android:gravity="center"
             android:singleLine="true"
             android:ellipsize="marquee"
@@ -50,6 +38,18 @@
             android:textColor="@color/text_light"
             android:textSize="@dimen/_12ssp"
             android:letterSpacing="0.1" />
+
+        <ImageView
+            android:id="@+id/globe_icon"
+            android:layout_width="@dimen/_32sdp"
+            android:layout_height="@dimen/_32sdp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:padding="@dimen/_6sdp"
+            android:src="@drawable/ic_globe"
+            app:tint="@color/text_light"
+            android:contentDescription="Playback Options" />
 
         <ImageView
             android:id="@+id/more_icon"

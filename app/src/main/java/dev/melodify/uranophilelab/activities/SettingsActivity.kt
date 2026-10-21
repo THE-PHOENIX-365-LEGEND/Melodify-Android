@@ -22,6 +22,7 @@ import dev.melodify.uranophilelab.utils.MiniPlayerHelper
 import dev.melodify.uranophilelab.utils.MusicPlayerManager
 import dev.melodify.uranophilelab.utils.SharedPreferenceManager
 import dev.melodify.uranophilelab.utils.SleepTimerManager
+import dev.melodify.uranophilelab.utils.TrackDownloader
 import dev.melodify.uranophilelab.utils.customview.MaterialCustomSwitch.OnCheckChangeListener
 
 class SettingsActivity : AppCompatActivity() {
@@ -75,6 +76,25 @@ class SettingsActivity : AppCompatActivity() {
         binding!!.highQualityTrack.setChecked(settingsSharedPrefManager.highQualityTrack)
         binding!!.storeInCache.setChecked(settingsSharedPrefManager.storeInCache)
         binding!!.playInBackground?.setChecked(settingsSharedPrefManager.playInBackground)
+
+        // Download Format selector (MP3 / M4A / OGG)
+        val currentFormat = settingsSharedPrefManager.downloadFormat
+        val formatCheckedId = when (currentFormat) {
+            TrackDownloader.DownloadFormat.MP3.extension -> R.id.format_mp3
+            TrackDownloader.DownloadFormat.OGG.extension -> R.id.format_ogg
+            else -> R.id.format_m4a
+        }
+        binding!!.downloadFormatChipGroup?.check(formatCheckedId)
+        binding!!.downloadFormatChipGroup?.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isNotEmpty()) {
+                val newExt = when (checkedIds[0]) {
+                    R.id.format_mp3 -> TrackDownloader.DownloadFormat.MP3.extension
+                    R.id.format_ogg -> TrackDownloader.DownloadFormat.OGG.extension
+                    else -> TrackDownloader.DownloadFormat.M4A.extension
+                }
+                settingsSharedPrefManager.downloadFormat = newExt
+            }
+        }
 
         binding!!.themeChipGroup.setOnCheckedChangeListener { _: RadioGroup?, checkedId: Int ->
             settingsSharedPrefManager.theme =
@@ -277,6 +297,12 @@ class SettingsActivity : AppCompatActivity() {
             get() = sharedPreferences.getBoolean("play_in_background", true)
             set(value) {
                 sharedPreferences.edit { putBoolean("play_in_background", value) }
+            }
+
+        var downloadFormat: String
+            get() = sharedPreferences.getString("download_format", TrackDownloader.DownloadFormat.M4A.extension) ?: TrackDownloader.DownloadFormat.M4A.extension
+            set(value) {
+                sharedPreferences.edit { putString("download_format", value) }
             }
 
         var theme: String?

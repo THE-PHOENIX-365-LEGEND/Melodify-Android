@@ -28,6 +28,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import dev.melodify.uranophilelab.utils.ShuffleUtil
+import dev.melodify.uranophilelab.utils.SleepTimerManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dev.melodify.uranophilelab.model.history.SongHistoryItem
@@ -465,14 +467,35 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         binding!!.shuffleIcon.setOnClickListener {
             val player = MusicPlayerManager.player
             if (player != null) {
-                player.shuffleModeEnabled = !player.shuffleModeEnabled
-                if (player.shuffleModeEnabled) binding!!.shuffleIcon.imageTintList =
-                    ColorStateList.valueOf(getResources().getColor(R.color.spotify_green))
-                else binding!!.shuffleIcon.imageTintList = ColorStateList.valueOf(
-                    getResources().getColor(
-                        R.color.textSec
+                val newShuffleState = !player.shuffleModeEnabled
+                player.shuffleModeEnabled = newShuffleState
+                if (newShuffleState) {
+                    val queue = MusicPlayerManager.trackQueue?.filterNotNull()
+                    if (!queue.isNullOrEmpty()) {
+                        val currentId = MusicPlayerManager.MUSIC_ID
+                        val currentSong = mSongResponse?.data?.firstOrNull()
+                        val artistMap = mutableMapOf<String, String>()
+                        if (currentId != null && currentSong != null) {
+                            val primaryArtist = currentSong.artists?.primary?.firstOrNull()
+                            val artist = primaryArtist?.id ?: primaryArtist?.name() ?: ""
+                            artistMap[currentId] = artist
+                        }
+                        val shuffled = ShuffleUtil.shuffleTrackIds(queue, artistMap)
+                        MusicPlayerManager.trackQueue = shuffled.toMutableList()
+                        if (currentId != null) {
+                            val newPos = MusicPlayerManager.trackQueue?.indexOf(currentId) ?: -1
+                            if (newPos != -1) MusicPlayerManager.track_position = newPos
+                        }
+                    }
+                    binding!!.shuffleIcon.imageTintList =
+                        ColorStateList.valueOf(getResources().getColor(R.color.spotify_green))
+                } else {
+                    binding!!.shuffleIcon.imageTintList = ColorStateList.valueOf(
+                        getResources().getColor(
+                            R.color.textSec
+                        )
                     )
-                )
+                }
             }
             if (isDebugMode) Toast.makeText(
                 this@MusicOverviewActivity,
@@ -506,6 +529,10 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
             sendIntent.type = "text/plain"
             startActivity(sendIntent)
         })
+
+        binding!!.globeIcon.setOnClickListener {
+            showPlaybackOptionsBottomSheet()
+        }
 
         binding!!.moreIcon.setOnClickListener(View.OnClickListener {
             val bottomSheetDialog = BottomSheetDialog(
@@ -575,9 +602,14 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
                 progressDialog.setMessage("Downloading...")
                 progressDialog.setCancelable(false)
                 progressDialog.setCanceledOnTouchOutside(false)
+                val settingsMgr = SettingsActivity.SettingsSharedPrefManager(this@MusicOverviewActivity)
+                val downloadFormat = TrackDownloader.DownloadFormat.fromExtension(
+                    settingsMgr.downloadFormat
+                )
                 TrackDownloader.downloadAndEmbedMetadata(
                     this@MusicOverviewActivity,
                     song,
+                    downloadFormat,
                     object : TrackDownloadListener {
                         override fun onStarted() {
                             progressDialog.show()
@@ -1244,6 +1276,97 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
             binding?.favoriteIcon?.setImageResource(R.drawable.ic_circle_add)
             binding?.favoriteIcon?.imageTintList = ColorStateList.valueOf(resources.getColor(R.color.text_light, theme))
         }
+    }
+
+    private fun showPlaybackOptionsBottomSheet() {
+        val bottomSheetDialog = BottomSheetDialog(
+            this@MusicOverviewActivity,
+            R.style.MyBottomSheetDialogTheme
+        )
+        val dialogView = layoutInflater.inflate(R.layout.playback_options_bottom_sheet, null)
+
+        val speedItem = dialogView.findViewById<dev.melodify.uranophilelab.utils.customview.BottomSheetItemView>(R.id.playback_speed_item)
+        val sleepItem = dialogView.findViewById<dev.melodify.uranophilelab.utils.customview.BottomSheetItemView>(R.id.sleep_timer_item)
+
+        fun updateItemLabels() {
+            val currentSpeed = MusicPlayerManager.PLAYBACK_SPEED
+            val speedText = if (currentSpeed == 1.0f) "1.0x (Normal)" else "${currentSpeed}x"
+            speedItem?.titleTextView?.text = "Playback Speed ($speedText)"
+
+            val remainingTime = SleepTimerManager.getFormattedRemainingTime()
+            sleepItem?.titleTextView?.text = "Sleep Timer ($remainingTime)"
+        }
+
+        updateItemLabels()
+
+        speedItem?.setOnClickListener {
+            val speeds = arrayOf("0.5x", "0.75x", "1.0x (Normal)", "1.25x", "1.5x", "1.75x", "2.0x")
+            val speedValues = floatArrayOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f)
+
+            MaterialAlertDialogBuilder(this@MusicOverviewActivity)
+                .setTitle("Playback Speed")
+                .setItems(speeds) { speedDialog, which ->
+                    val chosenSpeed = speedValues[which]
+                    MusicPlayerManager.setPlaybackSpeed(chosenSpeed)
+                    Toast.makeText(this@MusicOverviewActivity, "Playback speed set to ${speeds[which]}", Toast.LENGTH_SHORT).show()
+                    updateItemLabels()
+                    speedDialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        sleepItem?.setOnClickListener {
+            val options = arrayOf("15 Minutes", "30 Minutes", "45 Minutes", "60 Minutes", "End of Track", "Custom Time...", "Turn Off Timer")
+            MaterialAlertDialogBuilder(this@MusicOverviewActivity)
+                .setTitle("Sleep Timer")
+                .setItems(options) { sleepDialog, which ->
+                    when (which) {
+                        0 -> SleepTimerManager.startTimer(this@MusicOverviewActivity, 15)
+                        1 -> SleepTimerManager.startTimer(this@MusicOverviewActivity, 30)
+                        2 -> SleepTimerManager.startTimer(this@MusicOverviewActivity, 45)
+                        3 -> SleepTimerManager.startTimer(this@MusicOverviewActivity, 60)
+                        4 -> SleepTimerManager.startEndOfTrackTimer(this@MusicOverviewActivity)
+                        5 -> showCustomSleepTimerDialogForPlayer { updateItemLabels() }
+                        6 -> {
+                            SleepTimerManager.cancelTimer()
+                            Toast.makeText(this@MusicOverviewActivity, "Sleep timer turned off", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    updateItemLabels()
+                    sleepDialog.dismiss()
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+
+        bottomSheetDialog.setContentView(dialogView)
+        bottomSheetDialog.show()
+    }
+
+    private fun showCustomSleepTimerDialogForPlayer(onSet: (() -> Unit)? = null) {
+        val input = android.widget.EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            hint = "Minutes (e.g. 20)"
+            setPadding(48, 24, 48, 24)
+        }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Custom Sleep Timer")
+            .setMessage("Enter timer duration in minutes:")
+            .setView(input)
+            .setPositiveButton("Set") { dialog, _ ->
+                val text = input.text.toString().trim()
+                val mins = text.toIntOrNull()
+                if (mins != null && mins > 0) {
+                    SleepTimerManager.startTimer(this, mins)
+                    onSet?.invoke()
+                } else {
+                    Toast.makeText(this, "Please enter a valid number of minutes", Toast.LENGTH_SHORT).show()
+                }
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     companion object {

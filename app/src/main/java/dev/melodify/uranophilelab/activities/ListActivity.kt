@@ -51,11 +51,13 @@ import androidx.transition.TransitionManager
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import dev.melodify.uranophilelab.utils.TrackDownloader
+import dev.melodify.uranophilelab.utils.ShuffleUtil
 
 class ListActivity : AppCompatActivity() {
     var binding: ActivityListBinding? = null
 
     private val trackQueue: MutableList<String?> = ArrayList()
+    private val loadedArtistMap: HashMap<String, String> = HashMap()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,37 +112,7 @@ class ListActivity : AppCompatActivity() {
 
             val player = MusicPlayerManager.player
             if (player != null) {
-                val newShuffleState = !player.shuffleModeEnabled
-                player.shuffleModeEnabled = newShuffleState
-                if (newShuffleState) {
-                    val shuffledQueue = ArrayList(validQueue).apply { shuffle() }
-                    MusicPlayerManager.trackQueue = shuffledQueue
-                    MusicPlayerManager.track_position = 0
-                    if (player.isPlaying) {
-                        Toast.makeText(this@ListActivity, "Shuffle enabled", Toast.LENGTH_SHORT).show()
-                    } else {
-                        startActivity(
-                            Intent(this@ListActivity, MusicOverviewActivity::class.java).putExtra(
-                                "id",
-                                shuffledQueue[0]
-                            )
-                        )
-                    }
-                } else {
-                    MusicPlayerManager.trackQueue = ArrayList(validQueue)
-                    Toast.makeText(this@ListActivity, "Shuffle disabled", Toast.LENGTH_SHORT).show()
-                }
-                updatePlayerControlsState()
-            } else {
-                val shuffledQueue = ArrayList(validQueue).apply { shuffle() }
-                MusicPlayerManager.trackQueue = shuffledQueue
-                MusicPlayerManager.track_position = 0
-                startActivity(
-                    Intent(this@ListActivity, MusicOverviewActivity::class.java).putExtra(
-                        "id",
-                        shuffledQueue[0]
-                    )
-                )
+                player.shuffleModeEnabled = true
             }
         }
 
@@ -173,10 +145,14 @@ class ListActivity : AppCompatActivity() {
                         if (songResponse.success && !songResponse.data.isNullOrEmpty()) {
                             var downloadedCount = 0
                             val totalCount = songResponse.data.size
+                            val settingsMgr = SettingsActivity.SettingsSharedPrefManager(this@ListActivity)
+                            val downloadFormat = TrackDownloader.DownloadFormat.fromExtension(
+                                settingsMgr.downloadFormat
+                            )
                             for (song in songResponse.data) {
                                 if (song != null) {
                                     TrackDownloader.downloadAndEmbedMetadata(
-                                        this@ListActivity, song, object : TrackDownloader.TrackDownloadListener {
+                                        this@ListActivity, song, downloadFormat, object : TrackDownloader.TrackDownloadListener {
                                             override fun onStarted() {}
                                             override fun onFinished() {
                                                 downloadedCount++
@@ -679,7 +655,11 @@ class ListActivity : AppCompatActivity() {
             )
             trackQueue.clear()
             for (song in songs) {
-                if (song != null && !song.id.isNullOrBlank()) trackQueue.add(song.id)
+                if (song != null && !song.id.isNullOrBlank()) {
+                    trackQueue.add(song.id)
+                    val artist = song.description?.split("|")?.firstOrNull()?.trim() ?: ""
+                    loadedArtistMap[song.id] = artist
+                }
             }
         }
     }
@@ -720,7 +700,12 @@ class ListActivity : AppCompatActivity() {
         )
         trackQueue.clear()
         for (song in songs) {
-            if (!song.id.isNullOrBlank()) trackQueue.add(song.id)
+            if (!song.id.isNullOrBlank()) {
+                trackQueue.add(song.id)
+                val primaryArtist = song.artists?.primary?.firstOrNull()
+                val artist = primaryArtist?.id ?: primaryArtist?.name() ?: ""
+                loadedArtistMap[song.id] = artist
+            }
         }
 
         binding!!.shareIcon.setOnClickListener(View.OnClickListener {
@@ -777,7 +762,12 @@ class ListActivity : AppCompatActivity() {
         )
         trackQueue.clear()
         for (song in songs) {
-            if (!song.id.isNullOrBlank()) trackQueue.add(song.id)
+            if (!song.id.isNullOrBlank()) {
+                trackQueue.add(song.id)
+                val primaryArtist = song.artists?.primary?.firstOrNull()
+                val artist = primaryArtist?.id ?: primaryArtist?.name() ?: ""
+                loadedArtistMap[song.id] = artist
+            }
         }
 
         binding!!.shareIcon.setOnClickListener(View.OnClickListener {

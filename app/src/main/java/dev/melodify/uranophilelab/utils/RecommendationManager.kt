@@ -27,7 +27,7 @@ object RecommendationManager {
     fun getRecommendationsForSong(
         context: Context,
         song: SongResponse.Song,
-        limit: Int = 15,
+        limit: Int = 30,
         callback: (List<SongResponse.Song>) -> Unit
     ) {
         val songId = song.id ?: run {
@@ -99,9 +99,15 @@ object RecommendationManager {
         limit: Int,
         callback: (List<SongResponse.Song>) -> Unit
     ) {
-        val query = song.artists?.primary?.firstOrNull()?.name()
-            ?: song.language
-            ?: song.name()
+        val primaryArtistName = song.artists?.primary?.firstOrNull()?.name()
+        val songLanguage = song.language
+
+        val query = when {
+            !primaryArtistName.isNullOrBlank() && !songLanguage.isNullOrBlank() -> "$primaryArtistName $songLanguage"
+            !primaryArtistName.isNullOrBlank() -> primaryArtistName
+            !songLanguage.isNullOrBlank() -> "$songLanguage top songs"
+            else -> song.name()
+        }
 
         apiManager.searchSongs(query, 0, limit + 5, object : RequestNetwork.RequestListener {
             override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {

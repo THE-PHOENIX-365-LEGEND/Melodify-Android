@@ -168,20 +168,9 @@ class ActivitySearchListItemAdapter(private val data: MutableList<SearchListItem
             intent.putExtra("id", item.id)
             when (item.type) {
                 SearchListItem.Type.SONG -> {
-                    MusicPlayerManager.trackQueue?.clear()
-                    var clickIndex = 0
-                    var validIndex = 0
-                    for (i in data.indices) {
-                        val searchItem = data[i]
-                        if (searchItem.type == SearchListItem.Type.SONG && !searchItem.id.isNullOrEmpty() && searchItem.id != "<shimmer>") {
-                            MusicPlayerManager.trackQueue?.add(searchItem.id)
-                            if (i == position) {
-                                clickIndex = validIndex
-                            }
-                            validIndex++
-                        }
-                    }
-                    MusicPlayerManager.track_position = clickIndex
+                    MusicPlayerManager.trackQueue = mutableListOf(item.id)
+                    MusicPlayerManager.track_position = 0
+                    MusicPlayerManager.MUSIC_ID = item.id
                     intent.setClass(holder.itemView.context, MusicOverviewActivity::class.java)
                 }
 
