@@ -40,7 +40,7 @@
             android:background="@android:color/transparent"
             android:fontFamily="@font/avenir_next_regular"
             android:hint="@android:string/search_go"
-            android:textColorHint="#B3B3B3"
+            android:textColorHint="@color/textSec"
             android:imeOptions="actionSearch"
             android:importantForAutofill="no"
             android:inputType="text"
@@ -200,7 +200,7 @@
                 android:fontFamily="@font/avenir_next_regular"
                 android:padding="@dimen/_4sdp"
                 android:text="Clear"
-                android:textColor="#B3B3B3"
+                android:textColor="@color/textSec"
                 android:textSize="@dimen/_11ssp" />
 
         </LinearLayout>

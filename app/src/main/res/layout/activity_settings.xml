@@ -267,6 +267,36 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/music_provider_setting"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="@dimen/_12sdp"
+                android:paddingVertical="@dimen/_8sdp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Music Provider"
+                    android:textColor="@color/textMain"
+                    android:textSize="@dimen/_13sdp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/music_provider_value"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_2sdp"
+                    android:text="JioSaavn"
+                    android:textColor="@color/textSec"
+                    android:textSize="@dimen/_11sdp" />
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:id="@+id/playback_speed_setting"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -340,7 +370,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Equalizer Shortcut"
+                    android:text="Equalizer"
                     android:textColor="@color/textMain"
                     android:textSize="@dimen/_13sdp"
                     android:textStyle="bold" />
@@ -349,7 +379,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/_2sdp"
-                    android:text="One-tap access to system audio equalizer"
+                    android:text="Custom 10-band equalizer and audio presets"
                     android:textColor="@color/textSec"
                     android:textSize="@dimen/_11sdp" />
 

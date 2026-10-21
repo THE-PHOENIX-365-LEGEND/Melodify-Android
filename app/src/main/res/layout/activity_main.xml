@@ -5,108 +5,29 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:background="@drawable/bg_player_gradient"
     tools:context=".activities.MainActivity">
-
-    <!-- Header Toolbar -->
-    <LinearLayout
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="@dimen/_12sdp"
-        android:paddingTop="@dimen/_10sdp"
-        android:paddingBottom="@dimen/_6sdp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <!-- Left Action Icon: 3-Dots Menu -->
-        <ImageView
-            android:id="@+id/more_button"
-            android:layout_width="@dimen/_26sdp"
-            android:layout_height="@dimen/_26sdp"
-            android:layout_marginEnd="@dimen/_10sdp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:padding="@dimen/_3sdp"
-            android:src="@drawable/more_vert_24px"
-            app:tint="@color/text_light"
-            android:contentDescription="More options" />
-
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/greeting_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/avenir_next_bold"
-                android:includeFontPadding="false"
-                android:text="Good afternoon"
-                android:textColor="@color/text_light"
-                android:textSize="@dimen/_17ssp" />
-
-            <TextView
-                android:id="@+id/sub_greeting_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="@font/avenir_next_regular"
-                android:includeFontPadding="false"
-                android:text="Music for you"
-                android:textColor="#B3B3B3"
-                android:textSize="@dimen/_10ssp" />
-        </LinearLayout>
-
-        <!-- Right Action Icons: History, Settings -->
-        <ImageView
-            android:id="@+id/history_button"
-            android:layout_width="@dimen/_26sdp"
-            android:layout_height="@dimen/_26sdp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:padding="@dimen/_3sdp"
-            android:src="@drawable/round_history_24"
-            app:tint="@color/text_light"
-            android:contentDescription="History" />
-
-        <ImageView
-            android:id="@+id/settings_button"
-            android:layout_width="@dimen/_26sdp"
-            android:layout_height="@dimen/_26sdp"
-            android:layout_marginStart="@dimen/_8sdp"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
-            android:padding="@dimen/_3sdp"
-            android:src="@drawable/settings_24px"
-            app:tint="@color/text_light"
-            android:contentDescription="Settings" />
-
-    </LinearLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/refreshLayout"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:clipChildren="false"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toTopOf="@+id/mini_player"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar">
+        app:layout_constraintTop_toTopOf="parent">
 
         <androidx.core.widget.NestedScrollView
             android:id="@+id/nestedScrollView"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="match_parent"
             android:fillViewport="true"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             android:overScrollMode="never"
             android:scrollbars="none">
 
@@ -114,9 +35,90 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
+                android:clipChildren="false"
+                android:clipToPadding="false"
                 android:paddingHorizontal="@dimen/_12sdp"
                 android:paddingTop="@dimen/_8sdp"
-                android:paddingBottom="@dimen/_20sdp">
+                android:paddingBottom="@dimen/_80sdp">
+
+                <!-- Header Toolbar -->
+                <LinearLayout
+                    android:id="@+id/toolbar"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="@dimen/_4sdp"
+                    android:paddingBottom="@dimen/_10sdp">
+
+                    <!-- Left Action Icon: 3-Dots Menu -->
+                    <ImageView
+                        android:id="@+id/more_button"
+                        android:layout_width="@dimen/_26sdp"
+                        android:layout_height="@dimen/_26sdp"
+                        android:layout_marginEnd="@dimen/_10sdp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:padding="@dimen/_3sdp"
+                        android:src="@drawable/more_vert_24px"
+                        app:tint="@color/text_light"
+                        android:contentDescription="More options" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/greeting_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/avenir_next_bold"
+                            android:includeFontPadding="false"
+                            android:text="Good afternoon"
+                            android:textColor="@color/text_light"
+                            android:textSize="@dimen/_17ssp" />
+
+                        <TextView
+                            android:id="@+id/sub_greeting_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="@font/avenir_next_regular"
+                            android:includeFontPadding="false"
+                            android:text="Music for you"
+                            android:textColor="@color/textSec"
+                            android:textSize="@dimen/_10ssp" />
+                    </LinearLayout>
+
+                    <!-- Right Action Icons: History, Settings -->
+                    <ImageView
+                        android:id="@+id/history_button"
+                        android:layout_width="@dimen/_26sdp"
+                        android:layout_height="@dimen/_26sdp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:padding="@dimen/_3sdp"
+                        android:src="@drawable/round_history_24"
+                        app:tint="@color/text_light"
+                        android:contentDescription="History" />
+
+                    <ImageView
+                        android:id="@+id/settings_button"
+                        android:layout_width="@dimen/_26sdp"
+                        android:layout_height="@dimen/_26sdp"
+                        android:layout_marginStart="@dimen/_8sdp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:padding="@dimen/_3sdp"
+                        android:src="@drawable/settings_24px"
+                        app:tint="@color/text_light"
+                        android:contentDescription="Settings" />
+
+                </LinearLayout>
 
                 <!-- Trending / Quick Access 6-Card Grid (varanasi-stable Trending) -->
                 <LinearLayout
@@ -124,12 +126,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/_10sdp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="vertical">
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/trending_recycler_view"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:overScrollMode="never"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
@@ -145,6 +151,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/_14sdp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="vertical">
 
                     <LinearLayout
@@ -177,7 +185,7 @@
                                 android:fontFamily="@font/avenir_next_regular"
                                 android:includeFontPadding="false"
                                 android:text="Based on your listening history"
-                                android:textColor="#B3B3B3"
+                                android:textColor="@color/textSec"
                                 android:textSize="@dimen/_10ssp" />
 
                         </LinearLayout>
@@ -199,9 +207,11 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recommendations_recycler_view"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/_8sdp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="horizontal"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
@@ -215,6 +225,8 @@
                     android:id="@+id/popular_songs_section"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="vertical">
 
                     <TextView
@@ -228,9 +240,11 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/popular_songs_recycler_view"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/_8sdp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="horizontal"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
@@ -245,6 +259,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/_14sdp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="vertical">
 
                     <TextView
@@ -258,9 +274,11 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/popular_albums_recycler_view"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/_8sdp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="horizontal"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
@@ -275,6 +293,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/_14sdp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="vertical">
 
                     <TextView
@@ -288,9 +308,11 @@
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/saved_recycler_view"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/_8sdp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:orientation="horizontal"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
@@ -305,6 +327,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/_14sdp"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
                     android:orientation="vertical">
 
                     <TextView
@@ -321,6 +345,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/_8sdp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
                         android:overScrollMode="never"
                         android:scrollbars="none"
                         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
@@ -349,7 +375,7 @@
         android:id="@+id/bottom_navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#000000"
+        android:background="@color/background"
         app:elevation="8dp"
         app:itemIconTint="@color/bottom_nav_item_color"
         app:itemTextColor="@color/bottom_nav_item_color"

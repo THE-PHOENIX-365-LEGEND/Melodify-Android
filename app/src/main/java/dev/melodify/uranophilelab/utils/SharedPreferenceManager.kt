@@ -29,6 +29,7 @@ import dev.melodify.uranophilelab.model.history.SongHistoryItem
 import dev.melodify.uranophilelab.model.history.AlbumHistoryItem
 import com.google.gson.reflect.TypeToken
 import androidx.core.content.edit
+import android.util.LruCache
 import java.util.concurrent.Executors
 
 @Entity(tableName = "key_value")
@@ -43,13 +44,13 @@ interface KeyValueDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun upsert(kv: KeyValue)
 
-    @Query("SELECT json FROM key_value WHERE key = :key LIMIT 1")
+    @Query("SELECT json FROM key_value WHERE `key` = :key LIMIT 1")
     fun getJson(key: String?): String?
 
-    @Query("SELECT COUNT(*) > 0 FROM key_value WHERE key = :key")
+    @Query("SELECT 1 FROM key_value WHERE `key` = :key")
     fun exists(key: String?): Boolean
 
-    @Query("DELETE FROM key_value WHERE key = :key")
+    @Query("DELETE FROM key_value WHERE `key` = :key")
     fun deleteByKey(key: String?)
 
     @Query("SELECT * FROM key_value")
@@ -110,6 +111,12 @@ class SharedPreferenceManager private constructor(context: Context) {
     @Volatile private var cachedAlbumHistory: MutableList<AlbumHistoryItem>? = null
     @Volatile private var cachedPlaylistHistory: MutableList<AlbumHistoryItem>? = null
     @Volatile private var cachedSavedLibraries: SavedLibraries? = null
+    @Volatile private var cachedFavoriteSongs: MutableList<SongHistoryItem>? = null
+
+    private val songResponseCache = LruCache<String, SongResponse>(50)
+    private val albumResponseCache = LruCache<String, AlbumSearch>(20)
+    private val playlistResponseCache = LruCache<String, PlaylistSearch>(20)
+    private val artistDataCache = LruCache<String, ArtistSearch>(20)
 
     // ---------- Generic put/get/remove helpers (asynchronous disk writes) ----------
     internal fun putJson(key: String, json: String?) {
@@ -207,51 +214,58 @@ class SharedPreferenceManager private constructor(context: Context) {
     // song response by id
     fun setSongResponseById(id: String?, songSearch: SongResponse?) {
         if (id == null) return
+        if (songSearch != null) songResponseCache.put(id, songSearch) else songResponseCache.remove(id)
         putJson(id, gson.toJson(songSearch))
     }
 
     fun getSongResponseById(id: String?): SongResponse? {
         if (id == null) return null
+        songResponseCache.get(id)?.let { return it }
         val json = getJson(id)
-        return if (json.isNullOrEmpty()) null else gson.fromJson(
-            json,
-            SongResponse::class.java
-        )
+        if (json.isNullOrEmpty()) return null
+        val result = try { gson.fromJson(json, SongResponse::class.java) } catch (e: Exception) { null }
+        if (result != null) songResponseCache.put(id, result)
+        return result
     }
 
     fun isSongResponseById(id: String?): Boolean {
         if (id == null) return false
+        if (songResponseCache.get(id) != null) return true
         return containsKey(id)
     }
 
     // album response by id
     fun setAlbumResponseById(id: String?, albumSearch: AlbumSearch?) {
         if (id == null) return
+        if (albumSearch != null) albumResponseCache.put(id, albumSearch) else albumResponseCache.remove(id)
         putJson(id, gson.toJson(albumSearch))
     }
 
     fun getAlbumResponseById(id: String?): AlbumSearch? {
         if (id == null) return null
+        albumResponseCache.get(id)?.let { return it }
         val json = getJson(id)
-        return if (json.isNullOrEmpty()) null else gson.fromJson(
-            json,
-            AlbumSearch::class.java
-        )
+        if (json.isNullOrEmpty()) return null
+        val result = try { gson.fromJson(json, AlbumSearch::class.java) } catch (e: Exception) { null }
+        if (result != null) albumResponseCache.put(id, result)
+        return result
     }
 
     // playlist response by id
     fun setPlaylistResponseById(id: String?, playlistSearch: PlaylistSearch?) {
         if (id == null) return
+        if (playlistSearch != null) playlistResponseCache.put(id, playlistSearch) else playlistResponseCache.remove(id)
         putJson(id, gson.toJson(playlistSearch))
     }
 
     fun getPlaylistResponseById(id: String?): PlaylistSearch? {
         if (id == null) return null
+        playlistResponseCache.get(id)?.let { return it }
         val json = getJson(id)
-        return if (json.isNullOrEmpty()) null else gson.fromJson(
-            json,
-            PlaylistSearch::class.java
-        )
+        if (json.isNullOrEmpty()) return null
+        val result = try { gson.fromJson(json, PlaylistSearch::class.java) } catch (e: Exception) { null }
+        if (result != null) playlistResponseCache.put(id, result)
+        return result
     }
 
     var trackQuality: String?
@@ -270,6 +284,48 @@ class SharedPreferenceManager private constructor(context: Context) {
             var string = string
             if (string == null) string = ""
             putJson("track_quality", gson.toJson(string))
+        }
+
+    var eqEnabled: Boolean
+        get() {
+            val json = getJson("eq_enabled")
+            if (json.isNullOrEmpty()) return false
+            return try {
+                gson.fromJson(json, Boolean::class.java) ?: false
+            } catch (e: Exception) {
+                false
+            }
+        }
+        set(value) {
+            putJson("eq_enabled", gson.toJson(value))
+        }
+
+    var eqPresetId: String?
+        get() {
+            val json = getJson("eq_preset_id")
+            if (json.isNullOrEmpty()) return "flat"
+            return try {
+                gson.fromJson(json, String::class.java) ?: "flat"
+            } catch (e: Exception) {
+                "flat"
+            }
+        }
+        set(value) {
+            putJson("eq_preset_id", gson.toJson(value ?: "custom"))
+        }
+
+    var eqGains: FloatArray
+        get() {
+            val json = getJson("eq_gains")
+            if (json.isNullOrEmpty()) return FloatArray(10) { 0f }
+            return try {
+                gson.fromJson(json, FloatArray::class.java) ?: FloatArray(10) { 0f }
+            } catch (e: Exception) {
+                FloatArray(10) { 0f }
+            }
+        }
+        set(value) {
+            putJson("eq_gains", gson.toJson(value))
         }
 
     var savedLibrariesData: SavedLibraries?
@@ -346,16 +402,18 @@ class SharedPreferenceManager private constructor(context: Context) {
     // artist data
     fun setArtistData(artistID: String?, artistSearch: ArtistSearch?) {
         if (artistID == null) return
+        if (artistSearch != null) artistDataCache.put(artistID, artistSearch) else artistDataCache.remove(artistID)
         putJson(keyForArtistData(artistID), gson.toJson(artistSearch))
     }
 
     fun getArtistData(artistId: String?): ArtistSearch? {
         if (artistId == null) return null
+        artistDataCache.get(artistId)?.let { return it }
         val json = getJson(keyForArtistData(artistId))
-        return if (json.isNullOrEmpty()) null else gson.fromJson(
-            json,
-            ArtistSearch::class.java
-        )
+        if (json.isNullOrEmpty()) return null
+        val result = try { gson.fromJson(json, ArtistSearch::class.java) } catch (e: Exception) { null }
+        if (result != null) artistDataCache.put(artistId, result)
+        return result
     }
 
     // ---------- Song & Album History ----------
@@ -497,16 +555,23 @@ class SharedPreferenceManager private constructor(context: Context) {
     // ---------- Favorites ----------
     var favoriteSongs: List<SongHistoryItem>
         get() {
+            cachedFavoriteSongs?.let { return ArrayList(it) }
             val json = getJson("favorite_songs")
-            if (json.isNullOrEmpty()) return emptyList()
+            if (json.isNullOrEmpty()) {
+                cachedFavoriteSongs = mutableListOf()
+                return ArrayList(cachedFavoriteSongs!!)
+            }
             val type = object : TypeToken<List<SongHistoryItem>>() {}.type
-            return try {
+            val result = try {
                 gson.fromJson<List<SongHistoryItem>>(json, type) ?: emptyList()
             } catch (e: Exception) {
                 emptyList()
             }
+            cachedFavoriteSongs = result.toMutableList()
+            return ArrayList(cachedFavoriteSongs!!)
         }
         set(list) {
+            cachedFavoriteSongs = list.toMutableList()
             putJson("favorite_songs", gson.toJson(list))
         }
 
@@ -543,6 +608,22 @@ class SharedPreferenceManager private constructor(context: Context) {
 
     fun clearFavoriteSongs() {
         putJson("favorite_songs", gson.toJson(emptyList<SongHistoryItem>()))
+    }
+
+    fun getStreamQuality(): String {
+        return getJson("stream_quality") ?: "auto"
+    }
+
+    fun setStreamQuality(quality: String) {
+        putJson("stream_quality", quality)
+    }
+
+    fun getPreferredProvider(): String {
+        return getJson("preferred_provider") ?: "saavn"
+    }
+
+    fun setPreferredProvider(provider: String) {
+        putJson("preferred_provider", provider)
     }
 
     // ---------- Migration helpers for one-time migration ----------

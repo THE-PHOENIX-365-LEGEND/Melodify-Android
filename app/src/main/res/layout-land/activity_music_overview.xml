@@ -270,7 +270,7 @@
                     android:layout_height="match_parent"
                     android:padding="@dimen/_8sdp"
                     android:src="@drawable/play_arrow_24px"
-                    app:tint="@color/background_dark" />
+                    app:tint="@color/background" />
 
             </com.google.android.material.card.MaterialCardView>
 

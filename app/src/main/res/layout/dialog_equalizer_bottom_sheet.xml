@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorSurface"
+    android:orientation="vertical"
+    android:paddingBottom="24dp">
+
+    <!-- Drag Handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bottom_sheet_background"
+        android:backgroundTint="@color/gray_600" />
+
+    <!-- Header Section -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="20dp"
+        android:paddingVertical="8dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/eqTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Equalizer"
+                android:textColor="@color/textMain"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/eqSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="Active: Flat"
+                android:textColor="@color/green"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnReset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="Reset"
+                android:textColor="@color/textSec"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/masterSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+    </RelativeLayout>
+
+    <!-- 10-Band Sliders Rack Container with Live Curve Overlay -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:layout_marginTop="8dp">
+
+        <!-- Live Frequency Curve Overlay Behind Sliders -->
+        <dev.melodify.uranophilelab.utils.customview.EqCurveView
+            android:id="@+id/liveCurveOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginStart="36dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginTop="8dp" />
+
+        <!-- 10-Band Sliders Rack -->
+        <LinearLayout
+            android:id="@+id/rackContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:paddingHorizontal="12dp">
+
+            <!-- Y-Axis Labels Column -->
+            <LinearLayout
+                android:layout_width="24dp"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="24dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:paddingVertical="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="+12"
+                    android:textColor="@color/textSec"
+                    android:textSize="9.5sp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="@color/textSec"
+                    android:textSize="9.5sp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="-12"
+                    android:textColor="@color/textSec"
+                    android:textSize="9.5sp" />
+
+            </LinearLayout>
+
+            <!-- 10 Slider Columns -->
+            <!-- Band 0: 31 Hz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider0"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="31 Hz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 1: 63 Hz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider1"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="63 Hz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 2: 125 Hz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider2"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="125 Hz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 3: 250 Hz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider3"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="250 Hz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 4: 500 Hz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider4"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="500 Hz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 5: 1 kHz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider5"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="1 kHz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 6: 2 kHz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider6"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="2 kHz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 7: 4 kHz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider7"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="4 kHz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 8: 8 kHz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider8"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="8 kHz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+            <!-- Band 9: 16 kHz -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
+                <dev.melodify.uranophilelab.utils.customview.EqBandSliderView
+                    android:id="@+id/bandSlider9"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="22dp"
+                    android:gravity="center"
+                    android:text="16 kHz"
+                    android:textColor="@color/textSec"
+                    android:textSize="10sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="12dp"
+        android:background="@color/dividerBackground" />
+
+    <!-- Active Preset Description Box -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:letterSpacing="0.12"
+            android:text="PRESETS"
+            android:textColor="@color/textSec"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/presetDescriptionText"
+            android:layout_width="match_parent"
+            android:layout_height="38dp"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/textSec"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+    <!-- Scrollable Presets Categories Container (Expands to fill remaining height) -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:id="@+id/presetCategoriesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

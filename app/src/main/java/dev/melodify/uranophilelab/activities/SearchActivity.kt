@@ -15,6 +15,10 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.chip.Chip
@@ -47,6 +51,7 @@ class SearchActivity : AppCompatActivity() {
     var albumsSearch: AlbumsSearch? = null
     var playlistsSearch: PlaylistsSearch? = null
     var artistsSearch: ArtistsSearch? = null
+    private var searchAdapter: ActivitySearchListItemAdapter? = null
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
     private var currentQuery: String = ""
@@ -159,10 +164,14 @@ class SearchActivity : AppCompatActivity() {
 
         binding!!.chipGroup.setOnCheckedStateChangeListener { _: ChipGroup?, checkedIds: MutableList<Int?>? ->
             Log.i("SearchActivity", "checkedIds: $checkedIds")
-            if (globalSearch != null) {
-                if (globalSearch!!.success) {
-                    refreshData()
-                }
+            if (currentQuery.isBlank()) return@setOnCheckedStateChangeListener
+            val checkedChipId = binding!!.chipGroup.checkedChipId
+            when (checkedChipId) {
+                R.id.chip_all -> if (globalSearch != null) refreshData() else fetchForCurrentChip(currentQuery, checkedChipId)
+                R.id.chip_song -> if (songSearch != null) refreshData() else fetchForCurrentChip(currentQuery, checkedChipId)
+                R.id.chip_albums -> if (albumsSearch != null) refreshData() else fetchForCurrentChip(currentQuery, checkedChipId)
+                R.id.chip_playlists -> if (playlistsSearch != null) refreshData() else fetchForCurrentChip(currentQuery, checkedChipId)
+                R.id.chip_artists -> if (artistsSearch != null) refreshData() else fetchForCurrentChip(currentQuery, checkedChipId)
             }
         }
 
@@ -194,10 +203,10 @@ class SearchActivity : AppCompatActivity() {
                         showData(query)
                     } else {
                         currentQuery = ""
-                        binding!!.recyclerView.adapter = ActivitySearchListItemAdapter(mutableListOf())
+                        searchAdapter?.updateData(mutableListOf())
                     }
                 }
-                searchHandler.postDelayed(searchRunnable!!, 500)
+                searchHandler.postDelayed(searchRunnable!!, 300)
             }
 
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -236,162 +245,196 @@ class SearchActivity : AppCompatActivity() {
             return
         }
 
+        val checkedChipId = binding?.chipGroup?.checkedChipId ?: R.id.chip_all
+        fetchForCurrentChip(query, checkedChipId)
+    }
+
+    private fun fetchForCurrentChip(query: String, checkedChipId: Int) {
         val apiManager = ApiManager(this)
         val sharedPreferenceManager = SharedPreferenceManager.getInstance(this@SearchActivity)
 
-        // 1. Global Search
-        apiManager.globalSearch(query, object : RequestNetwork.RequestListener {
-            override fun onResponse(
-                tag: String?,
-                response: String?,
-                responseHeaders: HashMap<String?, Any?>?
-            ) {
-                if (query != currentQuery) return
-                try {
-                    globalSearch = Gson().fromJson(response, GlobalSearch::class.java)
-                    if (globalSearch?.success == true) {
-                        sharedPreferenceManager.setSearchResultCache(query, globalSearch)
-                        refreshData()
+        when (checkedChipId) {
+            R.id.chip_all -> {
+                apiManager.globalSearch(query, object : RequestNetwork.RequestListener {
+                    override fun onResponse(
+                        tag: String?,
+                        response: String?,
+                        responseHeaders: HashMap<String?, Any?>?
+                    ) {
+                        if (query != currentQuery) return
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val parsed = try { Gson().fromJson(response, GlobalSearch::class.java) } catch (e: Exception) { null }
+                            withContext(Dispatchers.Main) {
+                                if (query != currentQuery) return@withContext
+                                globalSearch = parsed
+                                if (globalSearch?.success == true) {
+                                    sharedPreferenceManager.setSearchResultCache(query, globalSearch)
+                                    refreshData()
+                                }
+                            }
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing globalSearch", e)
-                }
-            }
 
-            override fun onErrorResponse(tag: String?, message: String?) {
-                if (query != currentQuery) return
-                val resultOffline = sharedPreferenceManager.getSearchResult(query)
-                if (resultOffline != null) {
-                    globalSearch = resultOffline
-                    refreshData()
-                }
-            }
-        })
-
-        // 2. Max Songs Search (limit = 50)
-        apiManager.searchSongs(query, 1, 50, object : RequestNetwork.RequestListener {
-            override fun onResponse(
-                tag: String?,
-                response: String?,
-                responseHeaders: HashMap<String?, Any?>?
-            ) {
-                if (query != currentQuery) return
-                try {
-                    songSearch = Gson().fromJson(response, SongSearch::class.java)
-                    if (songSearch?.success == true) {
-                        refreshData()
+                    override fun onErrorResponse(tag: String?, message: String?) {
+                        if (query != currentQuery) return
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val resultOffline = sharedPreferenceManager.getSearchResult(query)
+                            withContext(Dispatchers.Main) {
+                                if (query != currentQuery) return@withContext
+                                if (resultOffline != null) {
+                                    globalSearch = resultOffline
+                                    refreshData()
+                                }
+                            }
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing songSearch", e)
-                }
+                })
             }
-
-            override fun onErrorResponse(tag: String?, message: String?) {}
-        })
-
-        // 3. Max Albums Search (limit = 50)
-        apiManager.searchAlbums(query, 1, 50, object : RequestNetwork.RequestListener {
-            override fun onResponse(
-                tag: String?,
-                response: String?,
-                responseHeaders: HashMap<String?, Any?>?
-            ) {
-                if (query != currentQuery) return
-                try {
-                    albumsSearch = Gson().fromJson(response, AlbumsSearch::class.java)
-                    if (albumsSearch?.success == true) {
-                        refreshData()
+            R.id.chip_song -> {
+                apiManager.searchSongs(query, 1, 50, object : RequestNetwork.RequestListener {
+                    override fun onResponse(
+                        tag: String?,
+                        response: String?,
+                        responseHeaders: HashMap<String?, Any?>?
+                    ) {
+                        if (query != currentQuery) return
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val parsed = try { Gson().fromJson(response, SongSearch::class.java) } catch (e: Exception) { null }
+                            withContext(Dispatchers.Main) {
+                                if (query != currentQuery) return@withContext
+                                songSearch = parsed
+                                if (songSearch?.success == true) {
+                                    refreshData()
+                                }
+                            }
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing albumsSearch", e)
-                }
+
+                    override fun onErrorResponse(tag: String?, message: String?) {}
+                })
             }
-
-            override fun onErrorResponse(tag: String?, message: String?) {}
-        })
-
-        // 4. Max Playlists Search (limit = 50)
-        apiManager.searchPlaylists(query, 1, 50, object : RequestNetwork.RequestListener {
-            override fun onResponse(
-                tag: String?,
-                response: String?,
-                responseHeaders: HashMap<String?, Any?>?
-            ) {
-                if (query != currentQuery) return
-                try {
-                    playlistsSearch = Gson().fromJson(response, PlaylistsSearch::class.java)
-                    if (playlistsSearch?.success == true) {
-                        refreshData()
+            R.id.chip_albums -> {
+                apiManager.searchAlbums(query, 1, 50, object : RequestNetwork.RequestListener {
+                    override fun onResponse(
+                        tag: String?,
+                        response: String?,
+                        responseHeaders: HashMap<String?, Any?>?
+                    ) {
+                        if (query != currentQuery) return
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val parsed = try { Gson().fromJson(response, AlbumsSearch::class.java) } catch (e: Exception) { null }
+                            withContext(Dispatchers.Main) {
+                                if (query != currentQuery) return@withContext
+                                albumsSearch = parsed
+                                if (albumsSearch?.success == true) {
+                                    refreshData()
+                                }
+                            }
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing playlistsSearch", e)
-                }
+
+                    override fun onErrorResponse(tag: String?, message: String?) {}
+                })
             }
-
-            override fun onErrorResponse(tag: String?, message: String?) {}
-        })
-
-        // 5. Max Artists Search (limit = 50)
-        apiManager.searchArtists(query, 1, 50, object : RequestNetwork.RequestListener {
-            override fun onResponse(
-                tag: String?,
-                response: String?,
-                responseHeaders: HashMap<String?, Any?>?
-            ) {
-                if (query != currentQuery) return
-                try {
-                    artistsSearch = Gson().fromJson(response, ArtistsSearch::class.java)
-                    if (artistsSearch?.success == true) {
-                        refreshData()
+            R.id.chip_playlists -> {
+                apiManager.searchPlaylists(query, 1, 50, object : RequestNetwork.RequestListener {
+                    override fun onResponse(
+                        tag: String?,
+                        response: String?,
+                        responseHeaders: HashMap<String?, Any?>?
+                    ) {
+                        if (query != currentQuery) return
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val parsed = try { Gson().fromJson(response, PlaylistsSearch::class.java) } catch (e: Exception) { null }
+                            withContext(Dispatchers.Main) {
+                                if (query != currentQuery) return@withContext
+                                playlistsSearch = parsed
+                                if (playlistsSearch?.success == true) {
+                                    refreshData()
+                                }
+                            }
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error parsing artistsSearch", e)
-                }
-            }
 
-            override fun onErrorResponse(tag: String?, message: String?) {}
-        })
+                    override fun onErrorResponse(tag: String?, message: String?) {}
+                })
+            }
+            R.id.chip_artists -> {
+                apiManager.searchArtists(query, 1, 50, object : RequestNetwork.RequestListener {
+                    override fun onResponse(
+                        tag: String?,
+                        response: String?,
+                        responseHeaders: HashMap<String?, Any?>?
+                    ) {
+                        if (query != currentQuery) return
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            val parsed = try { Gson().fromJson(response, ArtistsSearch::class.java) } catch (e: Exception) { null }
+                            withContext(Dispatchers.Main) {
+                                if (query != currentQuery) return@withContext
+                                artistsSearch = parsed
+                                if (artistsSearch?.success == true) {
+                                    refreshData()
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onErrorResponse(tag: String?, message: String?) {}
+                })
+            }
+        }
     }
 
     private fun refreshData() {
-        val data: MutableList<SearchListItem?> = ArrayList()
-        val checkedChipId = binding!!.chipGroup.checkedChipId
-        if (checkedChipId == R.id.chip_all) {
-            globalSearch?.data?.topQuery?.results?.forEach { item: TopQuery.Results? ->
-                if (item == null) return@forEach
-                if (!(item.type == "song" || item.type == "album" || item.type == "playlist" || item.type == "artist")) return@forEach
-                
-                val images = item.image
-                val imageUrl = if (!images.isNullOrEmpty()) images[images.size - 1]?.url ?: "" else ""
-                
-                data.add(
-                    SearchListItem(
-                        item.id,
-                        item.title(),
-                        item.description(),
-                        imageUrl,
-                        SearchListItem.Type.valueOf(item.type.uppercase(Locale.getDefault()))
+        val checkedChipId = binding?.chipGroup?.checkedChipId ?: R.id.chip_all
+        val q = currentQuery
+        lifecycleScope.launch(Dispatchers.Default) {
+            val data: MutableList<SearchListItem?> = ArrayList()
+            if (checkedChipId == R.id.chip_all) {
+                globalSearch?.data?.topQuery?.results?.forEach { item: TopQuery.Results? ->
+                    if (item == null) return@forEach
+                    if (!(item.type == "song" || item.type == "album" || item.type == "playlist" || item.type == "artist")) return@forEach
+                    
+                    val images = item.image
+                    val imageUrl = if (!images.isNullOrEmpty()) images[images.size - 1]?.url ?: "" else ""
+                    
+                    data.add(
+                        SearchListItem(
+                            item.id,
+                            item.title(),
+                            item.description(),
+                            imageUrl,
+                            SearchListItem.Type.valueOf(item.type.uppercase(Locale.getDefault()))
+                        )
                     )
-                )
+                }
+                addSongsData(data)
+                addAlbumsData(data)
+                addPlaylistsData(data)
+                addArtistsData(data)
+            } else if (checkedChipId == R.id.chip_song) {
+                addSongsData(data)
+            } else if (checkedChipId == R.id.chip_albums) {
+                addAlbumsData(data)
+            } else if (checkedChipId == R.id.chip_playlists) {
+                addPlaylistsData(data)
+            } else if (checkedChipId == R.id.chip_artists) {
+                addArtistsData(data)
             }
-            addSongsData(data)
-            addAlbumsData(data)
-            addPlaylistsData(data)
-            addArtistsData(data)
-        } else if (checkedChipId == R.id.chip_song) {
-            addSongsData(data)
-        } else if (checkedChipId == R.id.chip_albums) {
-            addAlbumsData(data)
-        } else if (checkedChipId == R.id.chip_playlists) {
-            addPlaylistsData(data)
-        } else if (checkedChipId == R.id.chip_artists) {
-            addArtistsData(data)
-        } else {
-            throw IllegalStateException("Unexpected value: " + binding!!.chipGroup.checkedChipId)
-        }
-        if (data.isNotEmpty()) {
+
             val uniqueData = data.filterNotNull().distinctBy { it.id }.toMutableList()
-            binding!!.recyclerView.setAdapter(ActivitySearchListItemAdapter(uniqueData))
+
+            withContext(Dispatchers.Main) {
+                if (q != currentQuery) return@withContext
+                if (uniqueData.isNotEmpty()) {
+                    if (searchAdapter == null || binding?.recyclerView?.adapter == null) {
+                        searchAdapter = ActivitySearchListItemAdapter(uniqueData)
+                        binding?.recyclerView?.adapter = searchAdapter
+                    } else {
+                        searchAdapter?.updateData(uniqueData)
+                    }
+                }
+            }
         }
     }
 
@@ -541,19 +584,16 @@ class SearchActivity : AppCompatActivity() {
     }
 
     private fun showShimmerData() {
-        val data: MutableList<SearchListItem?> = ArrayList()
-        for (i in 0..10) {
-            data.add(
-                SearchListItem(
-                    "<shimmer>",
-                    "",
-                    "",
-                    "",
-                    SearchListItem.Type.SONG
-                )
-            )
+        val shimmerList = List(10) {
+            SearchListItem("<shimmer>", "", "", "", SearchListItem.Type.SONG)
+        }.toMutableList()
+
+        if (searchAdapter == null || binding?.recyclerView?.adapter == null) {
+            searchAdapter = ActivitySearchListItemAdapter(shimmerList)
+            binding?.recyclerView?.adapter = searchAdapter
+        } else {
+            searchAdapter?.updateData(shimmerList)
         }
-        binding!!.recyclerView.setAdapter(ActivitySearchListItemAdapter(data.filterNotNull().toMutableList()))
     }
 
     override fun onResume() {
@@ -563,6 +603,10 @@ class SearchActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        binding?.edittext?.let { et ->
+            et.clearFocus()
+            hideKeyboard(et)
+        }
         MiniPlayerHelper.onActivityPause(this)
     }
 

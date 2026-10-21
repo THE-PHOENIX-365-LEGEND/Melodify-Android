@@ -35,6 +35,7 @@ class MusicService : Service() {
         if (MusicPlayerManager.musicService == this) {
             MusicPlayerManager.musicService = null
         }
+        actionPlaying = null
     }
 
     override fun onBind(intent: Intent?): IBinder {

@@ -253,7 +253,8 @@ object TrackDownloader {
         format: DownloadFormat = DownloadFormat.M4A,
         listener: TrackDownloadListener
     ) {
-        val audioUrl = song.downloadUrl?.lastOrNull()?.url ?: ""
+        val audioUrl = song.downloadUrl?.lastOrNull { !it?.url.isNullOrBlank() }?.url
+            ?: if (song.id == MusicPlayerManager.MUSIC_ID && !MusicPlayerManager.SONG_URL.isNullOrBlank()) MusicPlayerManager.SONG_URL!! else ""
         val imageUrl = song.image?.lastOrNull()?.url ?: ""
         val title = song.name() ?: ""
         val safeTitle = sanitizeFilename(title)

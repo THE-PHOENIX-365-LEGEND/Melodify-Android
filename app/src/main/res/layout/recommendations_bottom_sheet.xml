@@ -47,7 +47,7 @@
                 android:layout_marginTop="@dimen/_2sdp"
                 android:fontFamily="@font/avenir_next_regular"
                 android:text="Tailored track recommendations"
-                android:textColor="#B3B3B3"
+                android:textColor="@color/textSec"
                 android:textSize="@dimen/_11ssp" />
 
         </LinearLayout>

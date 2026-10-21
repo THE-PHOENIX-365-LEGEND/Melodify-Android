@@ -27,12 +27,26 @@ data class SongResponse(
         val album: Album?,
         val artists: Artists?,
         val image: MutableList<Image?>?,
-        val downloadUrl: MutableList<DownloadUrl?>?
-
+        val downloadUrl: MutableList<DownloadUrl?>?,
+        val source: String? = "saavn"
     ) {
         fun name(): String {
             return TextParserUtil.parseHtmlText(name)
         }
+    }
+
+    data class LosslessStream(
+        val url: String?,
+        val bitDepth: Int?,
+        val sampleRate: Int?,
+        val expiresAt: Long?
+    ) {
+        val label: String?
+            get() {
+                if (bitDepth == null || sampleRate == null) return null
+                val khz = (sampleRate / 1000.0).toString()
+                return "$bitDepth-bit / $khz kHz"
+            }
     }
 
     
