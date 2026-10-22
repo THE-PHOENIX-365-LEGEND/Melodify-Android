@@ -4,20 +4,22 @@ Melodify is a modern, lightweight, privacy-focused Android music streaming app b
 
 ## Features
 
-- **Ad-Free Experience**: Enjoy high-fidelity music streaming without any interruptions.
-- **Spotify Green & Deep Dark UI**: Beautiful, vibrant theme with custom vector branding and sleek OLED deep dark mode support.
-- **Redesigned Home Screen**: Dynamic time-based greetings ("Good Morning / Afternoon / Evening"), 6-card quick access grid, and bottom navigation bar (Home, Search, Library).
-- **Single-Row Controls**: Sleek horizontal control row for album & playlist pages containing Add to Library, Download, Share, Shuffle, and green circular Play buttons.
-- **In-Playlist Search**: Real-time live track search directly inside album and playlist pages.
-- **Smart Floating Mini-Player**: Persistent mini-player across all screens featuring a live progress bar and dark rounded card design.
-- **Queue Management**: View upcoming tracks, remove songs, and **drag-and-drop to reorder** the playback queue on the fly.
-- **Player Gestures**: Swipe left or right on album art to smoothly skip to next or previous tracks.
-- **Synchronized Lyrics**: Built-in dynamic LRC lyrics display with real-time tracking and tap-to-toggle view.
-- **Search with History**: Instant global search with recent query chips and auto-suggestions.
-- **Background Playback Settings**: Configurable toggle to keep playing or stop playback when the app is removed from recents.
-- **Library & Playlists**: Create personalized playlists with full JSON **Export & Import** backup support.
-- **High-Quality Audio & Downloads**: Stream and download tracks with embedded metadata and album art.
-- **Privacy-First**: No account required, no telemetry, and zero tracking.
+- **Ad-Free & Privacy-First**: Zero ads, no account registration required, no telemetry, and zero data tracking.
+- **Spotify Green & OLED Deep Dark Theme**: Beautiful, vibrant UI with Spotify Green accents, sleek vector branding, and light, dark, or system OLED deep dark theme support.
+- **10-Band Built-in Equalizer**: Custom 10-band Equalizer featuring live EQ response curves (`EqCurveView`), custom band sliders, and built-in preset audio profiles (Bass Boost, Vocal Booster, Acoustic, Rock, Pop, etc.).
+- **Smart Recommendation Engine**: Intelligent algorithmic recommendation system that automatically cues similar, non-repeating tracks based on your listening history and preferences.
+- **Dual-Source Synchronized Lyrics**: Dynamic LRC synchronized lyrics powered by JioSaavn and LRCLIB integrations with live line tracking and tap-to-toggle view.
+- **Multi-Format Downloads & ID3 Metadata Tagging**: Download tracks in MP3, M4A, or OGG formats up to 320kbps / Lossless quality, complete with embedded album artwork and ID3 metadata via JAudioTagger.
+- **Dynamic Home Screen**: Time-based personalized greetings ("Good Morning / Afternoon / Evening"), 6-card quick access grid, trending songs, popular playlists, top artists, and bottom navigation bar (Home, Search, Library).
+- **Smart Floating Mini-Player & Queue**: Persistent mini-player with live playback progress bar, album art swipe gestures, drag-and-drop queue reordering, and smart shuffle algorithms.
+- **In-Playlist & Global Search**: Instant global search across songs, albums, artists, playlists, and lyrics with recent query chips and real-time live search inside playlist and album pages.
+- **Library Management & JSON Backup**: Create personalized playlists, save favorite tracks and albums, with full JSON **Export & Import** backup and restore support.
+- **Listening History & Analytics**: Track recently played songs and albums with history views and listening analytics.
+- **Interactive Home Screen Widget**: App widget for the Android home screen featuring real-time album artwork display and player control buttons.
+- **Sleep Timer**: Built-in sleep timer to automatically pause playback after a configured duration.
+- **Deep Link Integration**: Direct link handling for opening JioSaavn and Melodify track, album, and playlist URLs directly inside the app.
+- **In-App Auto Updates**: Built-in release checker to automatically notify and update the app directly from GitHub releases.
+- **Background Playback & Quality Controls**: Customizable streaming/download audio quality options (Lossless down to 12kbps) and background playback persistence settings.
 
 ## Getting Started
 
