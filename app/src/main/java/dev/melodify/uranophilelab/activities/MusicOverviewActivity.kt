@@ -29,6 +29,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import dev.melodify.uranophilelab.utils.ListeningEventTracker
 import dev.melodify.uranophilelab.utils.ShuffleUtil
 import dev.melodify.uranophilelab.utils.SleepTimerManager
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -506,17 +507,23 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         }
 
         binding?.favoriteIcon?.setOnClickListener {
+            val songId = if (!MusicPlayerManager.MUSIC_ID.isNullOrEmpty()) MusicPlayerManager.MUSIC_ID else ID_FROM_EXTRA
+            if (songId.isNullOrEmpty()) return@setOnClickListener
+
             val currentSong = mSongResponse?.data?.getOrNull(0)
             val songTitle = binding!!.title.text.toString()
             val primaryArtist = if (artistsList.size > 0) artistsList[0].name() else ""
             val songItem = SongHistoryItem(
-                id = ID_FROM_EXTRA,
+                id = songId,
                 title = if (songTitle != "loading...") songTitle else currentSong?.name() ?: "",
                 artist = primaryArtist,
                 imageUrl = IMAGE_URL
             )
             val prefs = SharedPreferenceManager.getInstance(this)
             val added = prefs.toggleFavorite(songItem)
+            if (added) {
+                ListeningEventTracker.onTrackLiked(songId)
+            }
             updateFavoriteStatus()
             val msg = if (added) "Added to Favorites" else "Removed from Favorites"
             Snackbar.make(binding!!.root, msg, Snackbar.LENGTH_SHORT).show()
@@ -731,6 +738,8 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         val intent = Intent(this, MusicService::class.java)
         bindService(intent, this, BIND_AUTO_CREATE)
 
+        updateFavoriteStatus()
+
         // Update UI with current playback state
         if (MusicPlayerManager.player != null) {
             updateTrackInfo()
@@ -790,6 +799,7 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         val ID = intent.getStringExtra("id") ?: intent.extras?.getString("id", "") ?: ""
         if (ID.isEmpty()) return
         ID_FROM_EXTRA = ID
+        updateFavoriteStatus()
         // ((ApplicationClass)getApplicationContext()).setMusicDetails(null,null,null,ID);
         if (MusicPlayerManager.MUSIC_ID == ID) {
             updateSeekbar()
@@ -888,6 +898,8 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
                 imageUrl = IMAGE_URL
             )
         )
+
+        updateFavoriteStatus()
 
         if (MusicPlayerManager.MUSIC_ID != ID_FROM_EXTRA || MusicPlayerManager.player?.isPlaying != true || forced) {
             MusicPlayerManager.setMusicDetails(
@@ -1125,6 +1137,8 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
         mHandler.removeCallbacks(mUpdateTimeTask)
         if (isFinishing || isDestroyed || binding == null) return
 
+        updateFavoriteStatus()
+
         val currentTitle = binding?.title?.text?.toString() ?: ""
         if (currentTitle != MusicPlayerManager.MUSIC_TITLE) {
             binding?.title?.text = MusicPlayerManager.MUSIC_TITLE
@@ -1283,14 +1297,15 @@ class MusicOverviewActivity : AppCompatActivity(), ActionPlaying, ServiceConnect
     }
 
     private fun updateFavoriteStatus() {
-        if (ID_FROM_EXTRA.isNullOrEmpty()) return
+        val songId = if (!MusicPlayerManager.MUSIC_ID.isNullOrEmpty()) MusicPlayerManager.MUSIC_ID else ID_FROM_EXTRA
+        if (songId.isNullOrEmpty() || binding == null) return
         val prefs = SharedPreferenceManager.getInstance(this)
-        val isFav = prefs.isFavorite(ID_FROM_EXTRA)
+        val isFav = prefs.isFavorite(songId)
         if (isFav) {
             binding?.favoriteIcon?.setImageResource(R.drawable.favorite_24px)
             binding?.favoriteIcon?.imageTintList = ColorStateList.valueOf(resources.getColor(R.color.red, theme))
         } else {
-            binding?.favoriteIcon?.setImageResource(R.drawable.ic_circle_add)
+            binding?.favoriteIcon?.setImageResource(R.drawable.favorite_outline_24px)
             binding?.favoriteIcon?.imageTintList = ColorStateList.valueOf(resources.getColor(R.color.text_light, theme))
         }
     }

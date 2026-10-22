@@ -73,7 +73,10 @@ class ActivityArtistProfileTopSongsAdapter(private val data: MutableList<Song?>)
                 title = song.name(),
                 artist = primaryArtist,
                 coverUrl = coverUrl,
-                albumId = song.album?.id
+                albumId = song.album?.id,
+                onFavoriteToggled = { _ ->
+                    notifyItemChanged(holder.bindingAdapterPosition)
+                }
             )
         }
 

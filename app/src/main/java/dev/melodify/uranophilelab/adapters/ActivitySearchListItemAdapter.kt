@@ -24,6 +24,7 @@ import dev.melodify.uranophilelab.model.AlbumItem
 import dev.melodify.uranophilelab.model.BasicDataRecord
 import dev.melodify.uranophilelab.model.SearchListItem
 import dev.melodify.uranophilelab.model.history.SongHistoryItem
+import dev.melodify.uranophilelab.utils.ListeningEventTracker
 import dev.melodify.uranophilelab.records.sharedpref.SavedLibraries
 import dev.melodify.uranophilelab.utils.AnimatedMenuHelper
 import dev.melodify.uranophilelab.utils.MusicPlayerManager
@@ -99,9 +100,24 @@ class ActivitySearchListItemAdapter(private val data: MutableList<SearchListItem
         val prefs = SharedPreferenceManager.getInstance(holder.itemView.context)
 
         if (item.type == SearchListItem.Type.SONG) {
-            val isFav = !item.id.isNullOrEmpty() && prefs.isFavorite(item.id)
+            val songId = item.id
+            val isFav = !songId.isNullOrEmpty() && prefs.isFavorite(songId)
             favIcon?.visibility = if (isFav) View.VISIBLE else View.GONE
             favIcon?.setImageResource(R.drawable.favorite_24px)
+            favIcon?.setOnClickListener {
+                if (songId.isNullOrEmpty()) return@setOnClickListener
+                val historyItem = SongHistoryItem(
+                    id = songId,
+                    title = parsedTitle,
+                    artist = parsedSubtitle,
+                    imageUrl = item.coverImage ?: ""
+                )
+                val newFavState = prefs.toggleFavorite(historyItem)
+                if (newFavState) {
+                    ListeningEventTracker.onTrackLiked(songId)
+                }
+                favIcon.visibility = if (newFavState) View.VISIBLE else View.GONE
+            }
         } else {
             favIcon?.visibility = View.GONE
         }
@@ -118,7 +134,10 @@ class ActivitySearchListItemAdapter(private val data: MutableList<SearchListItem
                             songId = songId,
                             title = parsedTitle,
                             artist = parsedSubtitle,
-                            coverUrl = item.coverImage ?: ""
+                            coverUrl = item.coverImage ?: "",
+                            onFavoriteToggled = { _ ->
+                                notifyItemChanged(holder.bindingAdapterPosition)
+                            }
                         )
                     }
                 }

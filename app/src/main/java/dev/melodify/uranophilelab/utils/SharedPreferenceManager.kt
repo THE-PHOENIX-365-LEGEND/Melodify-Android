@@ -577,21 +577,24 @@ class SharedPreferenceManager private constructor(context: Context) {
 
     fun isFavorite(songId: String?): Boolean {
         if (songId.isNullOrBlank()) return false
-        return favoriteSongs.any { it.id == songId }
+        val cleanId = songId.trim()
+        return favoriteSongs.any { !it.id.isNullOrBlank() && it.id.trim() == cleanId }
     }
 
     fun addFavorite(song: SongHistoryItem) {
         if (song.id.isNullOrBlank()) return
+        val cleanId = song.id.trim()
         val current = favoriteSongs.toMutableList()
-        current.removeAll { it.id == song.id }
+        current.removeAll { !it.id.isNullOrBlank() && it.id.trim() == cleanId }
         current.add(0, song)
         favoriteSongs = current
     }
 
     fun removeFavorite(songId: String?) {
         if (songId.isNullOrBlank()) return
+        val cleanId = songId.trim()
         val current = favoriteSongs.toMutableList()
-        current.removeAll { it.id == songId }
+        current.removeAll { !it.id.isNullOrBlank() && it.id.trim() == cleanId }
         favoriteSongs = current
     }
 
@@ -607,6 +610,7 @@ class SharedPreferenceManager private constructor(context: Context) {
     }
 
     fun clearFavoriteSongs() {
+        cachedFavoriteSongs = mutableListOf()
         putJson("favorite_songs", gson.toJson(emptyList<SongHistoryItem>()))
     }
 

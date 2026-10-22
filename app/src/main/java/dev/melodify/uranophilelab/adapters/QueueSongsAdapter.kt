@@ -121,7 +121,8 @@ class QueueSongsAdapter(
             artistsNames.append(artistName)
             artistsNames.append(", ")
         }
-        artistText.text = artistsNames.toString().removeSuffix(", ")
+        val artistTextStr = artistsNames.toString().removeSuffix(", ")
+        artistText.text = if (artistTextStr.isNotEmpty()) "• $artistTextStr" else ""
         
         val images = song.image
         val imgUrl = if (images.isNullOrEmpty()) "" else images[images.size - 1]?.url ?: ""

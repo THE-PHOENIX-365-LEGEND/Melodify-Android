@@ -18,6 +18,7 @@ import dev.melodify.uranophilelab.activities.MusicOverviewActivity
 import dev.melodify.uranophilelab.model.history.SongHistoryItem
 import dev.melodify.uranophilelab.records.SongResponse.Song
 import dev.melodify.uranophilelab.utils.AnimatedMenuHelper
+import dev.melodify.uranophilelab.utils.ListeningEventTracker
 import dev.melodify.uranophilelab.utils.MusicPlayerManager
 import dev.melodify.uranophilelab.utils.SharedPreferenceManager
 
@@ -92,6 +93,9 @@ class ActivityListSongsItemAdapter(private val data: MutableList<Song>) :
                     imageUrl = imgUrl
                 )
                 val newFavState = prefs.toggleFavorite(item)
+                if (newFavState) {
+                    ListeningEventTracker.onTrackLiked(songId)
+                }
                 favIcon.visibility = if (newFavState) View.VISIBLE else View.GONE
             }
         }
@@ -121,7 +125,10 @@ class ActivityListSongsItemAdapter(private val data: MutableList<Song>) :
                     title = song.name(),
                     artist = primaryArtist,
                     coverUrl = imgUrl,
-                    albumId = song.album?.id
+                    albumId = song.album?.id,
+                    onFavoriteToggled = { _ ->
+                        notifyItemChanged(holder.bindingAdapterPosition)
+                    }
                 )
             }
         }

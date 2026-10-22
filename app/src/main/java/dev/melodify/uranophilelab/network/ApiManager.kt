@@ -541,6 +541,8 @@ class ApiManager(context: Context?) {
         private val ALBUMS_URL: String = BASE_URL + "albums"
         private val ARTISTS_URL: String = BASE_URL + "artists"
         private val PLAYLISTS_URL: String = BASE_URL + "playlists"
+        private const val TELEMETRY_EVENT_URL = "https://api.melodify.dev/api/v1/telemetry/event"
+        private const val TELEMETRY_BATCH_URL = "https://api.melodify.dev/api/v1/telemetry/batch"
         
         private const val DEFAULT_LANGUAGES = "hindi,english,punjabi,tamil,telugu,marathi,gujarati,bengali,kannada,bhojpuri,malayalam,urdu,haryanvi,rajasthani,odia,assamese"
 
@@ -798,5 +800,29 @@ class ApiManager(context: Context?) {
                 return null
             }
         }
+    }
+
+    fun postTelemetryEvent(jsonPayload: String, listener: RequestNetwork.RequestListener) {
+        val params = HashMap<String?, Any?>()
+        params["payload"] = jsonPayload
+        requestNetwork.setParams(params, RequestNetworkController.REQUEST_BODY)
+        requestNetwork.startRequestNetwork(
+            RequestNetworkController.POST,
+            TELEMETRY_EVENT_URL,
+            "telemetry_event",
+            listener
+        )
+    }
+
+    fun postTelemetryBatch(jsonPayload: String, listener: RequestNetwork.RequestListener) {
+        val params = HashMap<String?, Any?>()
+        params["payload"] = jsonPayload
+        requestNetwork.setParams(params, RequestNetworkController.REQUEST_BODY)
+        requestNetwork.startRequestNetwork(
+            RequestNetworkController.POST,
+            TELEMETRY_BATCH_URL,
+            "telemetry_batch",
+            listener
+        )
     }
 }

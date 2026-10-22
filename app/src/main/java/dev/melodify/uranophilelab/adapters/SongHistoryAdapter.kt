@@ -13,6 +13,7 @@ import com.bumptech.glide.Glide
 import dev.melodify.uranophilelab.R
 import dev.melodify.uranophilelab.activities.MusicOverviewActivity
 import dev.melodify.uranophilelab.model.history.SongHistoryItem
+import dev.melodify.uranophilelab.utils.ListeningEventTracker
 import dev.melodify.uranophilelab.utils.SharedPreferenceManager
 
 class SongHistoryAdapter(
@@ -77,7 +78,20 @@ class SongHistoryAdapter(
             favIcon.setOnClickListener {
                 if (songId.isNullOrEmpty()) return@setOnClickListener
                 val newFavState = prefs.toggleFavorite(item)
-                favIcon.visibility = if (newFavState) View.VISIBLE else View.GONE
+                if (newFavState) {
+                    ListeningEventTracker.onTrackLiked(songId)
+                }
+                if (isFavoritesMode && !newFavState) {
+                    val currentPos = holder.bindingAdapterPosition
+                    if (currentPos in data.indices) {
+                        data.removeAt(currentPos)
+                        notifyItemRemoved(currentPos)
+                        notifyItemRangeChanged(currentPos, data.size - currentPos)
+                        onItemRemovedListener?.invoke()
+                    }
+                } else {
+                    favIcon.visibility = if (newFavState) View.VISIBLE else View.GONE
+                }
             }
         }
 

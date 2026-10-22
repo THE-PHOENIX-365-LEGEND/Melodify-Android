@@ -181,7 +181,8 @@ object MiniPlayerHelper {
 
         // Setup Now Playing
         nowPlayingTitle.text = MusicPlayerManager.MUSIC_TITLE
-        nowPlayingArtist.text = MusicPlayerManager.MUSIC_DESCRIPTION
+        val artistDesc = MusicPlayerManager.MUSIC_DESCRIPTION
+        nowPlayingArtist.text = if (!artistDesc.isNullOrBlank() && !artistDesc.startsWith("•")) "• $artistDesc" else (artistDesc ?: "")
         if (!MusicPlayerManager.IMAGE_URL.isNullOrBlank() && MusicPlayerManager.IMAGE_URL != "<shimmer>") {
             try {
                 Glide.with(nowPlayingCover.context).load(MusicPlayerManager.IMAGE_URL!!.toUri()).into(nowPlayingCover)

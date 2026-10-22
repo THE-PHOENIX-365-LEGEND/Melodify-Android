@@ -12,17 +12,109 @@ import dev.melodify.uranophilelab.network.utility.RequestNetwork
 import dev.melodify.uranophilelab.records.ArtistAllSongs
 import dev.melodify.uranophilelab.records.SongResponse
 import dev.melodify.uranophilelab.records.SongSearch
+import java.util.Collections
 
 object RecommendationManager {
     private const val TAG = "RecommendationManager"
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // Memory cache of recently recommended song IDs to prevent repetition within session
+    private val recentlyRecommendedIds: MutableSet<String> = Collections.synchronizedSet(LinkedHashSet<String>())
+    private const val MAX_RECENT_CACHE_SIZE = 100
+
     /**
-     * Retrieves intelligent song recommendations for a given song.
-     * Strategy:
-     * 1. Try API song suggestions (/songs/{id}/suggestions).
-     * 2. Fallback to Primary Artist's top songs (/artists/{artistId}/songs).
-     * 3. Fallback to Search Songs by artist name + language/genre.
+     * Builds a comprehensive set of excluded song IDs to prevent repetition.
+     * Excludes:
+     * 1. Seed song ID
+     * 2. Currently playing song ID
+     * 3. Track queue items
+     * 4. Recently played songs from history
+     * 5. Songs recommended in the current session
+     */
+    private fun getExcludedSongIds(seedSongId: String? = null): Set<String> {
+        val excluded = HashSet<String>()
+        seedSongId?.let { excluded.add(it) }
+
+        // Currently playing song
+        MusicPlayerManager.MUSIC_ID?.let { excluded.add(it) }
+        MusicPlayerManager.CURRENT_TRACK?.data?.firstOrNull()?.id?.let { excluded.add(it) }
+
+        // Active queue songs
+        MusicPlayerManager.trackQueue?.filterNotNull()?.let { excluded.addAll(it) }
+
+        // Song history (recently played)
+        val prefManager = BaseApplicationClass.sharedPreferenceManager
+        prefManager?.songHistory?.take(30)?.forEach { item ->
+            item.id?.let { excluded.add(it) }
+        }
+
+        // Session recommendation memory cache
+        synchronized(recentlyRecommendedIds) {
+            excluded.addAll(recentlyRecommendedIds)
+        }
+
+        return excluded
+    }
+
+    /**
+     * Filters a list of songs to ensure NO repetition:
+     * - Removes excluded IDs
+     * - Ensures distinct song IDs
+     * - Ensures distinct normalized title + primary artist pairs (avoids re-releases / remastered duplicates)
+     */
+    private fun filterUniqueSongs(
+        songs: List<SongResponse.Song>,
+        excludedIds: Set<String>,
+        limit: Int
+    ): List<SongResponse.Song> {
+        val uniqueSongs = ArrayList<SongResponse.Song>()
+        val seenTrackKeys = HashSet<String>()
+
+        for (song in songs) {
+            val songId = song.id ?: continue
+            if (excludedIds.contains(songId)) continue
+
+            val primaryArtist = song.artists?.primary?.firstOrNull()?.name() ?: ""
+            val trackKey = "${song.name().lowercase().trim()}|${primaryArtist.lowercase().trim()}"
+
+            if (seenTrackKeys.contains(trackKey)) continue
+
+            seenTrackKeys.add(trackKey)
+            uniqueSongs.add(song)
+
+            // Cache ID in session memory
+            rememberRecommendedSong(songId)
+
+            if (uniqueSongs.size >= limit) break
+        }
+
+        return uniqueSongs
+    }
+
+    private fun rememberRecommendedSong(songId: String) {
+        synchronized(recentlyRecommendedIds) {
+            recentlyRecommendedIds.add(songId)
+            if (recentlyRecommendedIds.size > MAX_RECENT_CACHE_SIZE) {
+                val iterator = recentlyRecommendedIds.iterator()
+                if (iterator.hasNext()) {
+                    iterator.next()
+                    iterator.remove()
+                }
+            }
+        }
+    }
+
+    /**
+     * Clears session repetition cache (e.g. when app restarts or queue resets).
+     */
+    fun clearSessionRecommendationCache() {
+        synchronized(recentlyRecommendedIds) {
+            recentlyRecommendedIds.clear()
+        }
+    }
+
+    /**
+     * Retrieves intelligent, non-repeating song recommendations for a given song.
      */
     fun getRecommendationsForSong(
         context: Context,
@@ -35,26 +127,29 @@ object RecommendationManager {
             return
         }
 
+        val excludedIds = getExcludedSongIds(songId)
         val apiManager = ApiManager(context)
 
         // Step 1: Try song suggestions API
-        apiManager.retrieveSongSuggestions(songId, limit, object : RequestNetwork.RequestListener {
+        apiManager.retrieveSongSuggestions(songId, limit * 2, object : RequestNetwork.RequestListener {
             override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
                 try {
                     val songResponse = Gson().fromJson(response, SongResponse::class.java)
-                    val suggestions = songResponse?.data?.filterNotNull()?.filter { it.id != songId }
-                    if (songResponse?.success == true && !suggestions.isNullOrEmpty()) {
-                        mainHandler.post { callback(suggestions.take(limit)) }
+                    val suggestions = songResponse?.data?.filterNotNull() ?: emptyList()
+                    val filtered = filterUniqueSongs(suggestions, excludedIds, limit)
+
+                    if (songResponse?.success == true && filtered.isNotEmpty()) {
+                        mainHandler.post { callback(filtered) }
                         return
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "Song suggestions parsing failed: ${e.message}")
                 }
-                fallbackToArtistTopSongs(apiManager, song, limit, callback)
+                fallbackToArtistTopSongs(apiManager, song, excludedIds, limit, callback)
             }
 
             override fun onErrorResponse(tag: String?, message: String?) {
-                fallbackToArtistTopSongs(apiManager, song, limit, callback)
+                fallbackToArtistTopSongs(apiManager, song, excludedIds, limit, callback)
             }
         })
     }
@@ -62,6 +157,7 @@ object RecommendationManager {
     private fun fallbackToArtistTopSongs(
         apiManager: ApiManager,
         song: SongResponse.Song,
+        excludedIds: Set<String>,
         limit: Int,
         callback: (List<SongResponse.Song>) -> Unit
     ) {
@@ -73,29 +169,32 @@ object RecommendationManager {
                 override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
                     try {
                         val artistSongs = Gson().fromJson(response, ArtistAllSongs::class.java)
-                        val songs = artistSongs?.data?.songs?.filterNotNull()?.filter { it.id != song.id }
-                        if (artistSongs?.success == true && !songs.isNullOrEmpty()) {
-                            mainHandler.post { callback(songs.take(limit)) }
+                        val songs = artistSongs?.data?.songs?.filterNotNull() ?: emptyList()
+                        val filtered = filterUniqueSongs(songs, excludedIds, limit)
+
+                        if (artistSongs?.success == true && filtered.isNotEmpty()) {
+                            mainHandler.post { callback(filtered) }
                             return
                         }
                     } catch (e: Exception) {
                         Log.w(TAG, "Artist top songs parsing failed: ${e.message}")
                     }
-                    fallbackToSearch(apiManager, song, limit, callback)
+                    fallbackToSearch(apiManager, song, excludedIds, limit, callback)
                 }
 
                 override fun onErrorResponse(tag: String?, message: String?) {
-                    fallbackToSearch(apiManager, song, limit, callback)
+                    fallbackToSearch(apiManager, song, excludedIds, limit, callback)
                 }
             })
         } else {
-            fallbackToSearch(apiManager, song, limit, callback)
+            fallbackToSearch(apiManager, song, excludedIds, limit, callback)
         }
     }
 
     private fun fallbackToSearch(
         apiManager: ApiManager,
         song: SongResponse.Song,
+        excludedIds: Set<String>,
         limit: Int,
         callback: (List<SongResponse.Song>) -> Unit
     ) {
@@ -109,13 +208,15 @@ object RecommendationManager {
             else -> song.name()
         }
 
-        apiManager.searchSongs(query, 0, limit + 5, object : RequestNetwork.RequestListener {
+        apiManager.searchSongs(query, 0, limit * 2, object : RequestNetwork.RequestListener {
             override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
                 try {
                     val searchResult = Gson().fromJson(response, SongSearch::class.java)
-                    val songs = searchResult?.data?.results?.filterNotNull()?.filter { it.id != song.id }
-                    if (searchResult?.success == true && !songs.isNullOrEmpty()) {
-                        mainHandler.post { callback(songs.take(limit)) }
+                    val songs = searchResult?.data?.results?.filterNotNull() ?: emptyList()
+                    val filtered = filterUniqueSongs(songs, excludedIds, limit)
+
+                    if (searchResult?.success == true && filtered.isNotEmpty()) {
+                        mainHandler.post { callback(filtered) }
                         return
                     }
                 } catch (e: Exception) {
@@ -131,7 +232,7 @@ object RecommendationManager {
     }
 
     /**
-     * Generates personalized home recommendations based on listening history, favorites, or trending seeds.
+     * Generates personalized home recommendations based on listening history or favorites without repetition.
      */
     fun getHomePersonalizedRecommendations(
         context: Context,
@@ -207,15 +308,19 @@ object RecommendationManager {
         apiManager: ApiManager,
         callback: (title: String, subtitle: String, items: List<AlbumItem>) -> Unit
     ) {
+        val excludedIds = getExcludedSongIds()
         val trendingQueries = listOf("Trending", "Hits", "Top Songs", "Featured", "Romance")
         val query = trendingQueries.random()
-        apiManager.searchSongs(query, 0, 15, object : RequestNetwork.RequestListener {
+
+        apiManager.searchSongs(query, 0, 30, object : RequestNetwork.RequestListener {
             override fun onResponse(tag: String?, response: String?, responseHeaders: HashMap<String?, Any?>?) {
                 try {
                     val songSearch = Gson().fromJson(response, SongSearch::class.java)
-                    val results = songSearch?.data?.results?.filterNotNull()
-                    if (songSearch?.success == true && !results.isNullOrEmpty()) {
-                        val items = results.map { s ->
+                    val results = songSearch?.data?.results?.filterNotNull() ?: emptyList()
+                    val filtered = filterUniqueSongs(results, excludedIds, 15)
+
+                    if (songSearch?.success == true && filtered.isNotEmpty()) {
+                        val items = filtered.map { s ->
                             val img = s.image?.lastOrNull()?.url ?: ""
                             AlbumItem(s.name(), "${s.language ?: ""} ${s.year ?: ""}".trim(), img, s.id, "song")
                         }

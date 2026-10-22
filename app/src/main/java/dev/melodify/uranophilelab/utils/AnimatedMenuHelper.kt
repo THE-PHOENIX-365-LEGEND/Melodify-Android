@@ -57,7 +57,8 @@ object AnimatedMenuHelper {
         title: String,
         artist: String,
         coverUrl: String,
-        albumId: String? = null
+        albumId: String? = null,
+        onFavoriteToggled: ((Boolean) -> Unit)? = null
     ) {
         val bottomSheetDialog = BottomSheetDialog(context, R.style.MyBottomSheetDialogTheme)
         val inflater = LayoutInflater.from(context)
@@ -122,6 +123,10 @@ object AnimatedMenuHelper {
                 imageUrl = coverUrl
             )
             val newFavState = prefs.toggleFavorite(item)
+            if (newFavState) {
+                ListeningEventTracker.onTrackLiked(songId)
+            }
+            onFavoriteToggled?.invoke(newFavState)
             val msg = if (newFavState) "Added to Favorites" else "Removed from Favorites"
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }

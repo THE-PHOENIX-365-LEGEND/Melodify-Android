@@ -167,6 +167,9 @@ object MusicPlayerManager {
                     Player.STATE_ENDED -> {
                         val currentPos = player?.currentPosition ?: 0
                         val duration = player?.duration ?: 0
+                        appContext?.let { ctx ->
+                            ListeningEventTracker.onTrackEnded(ctx, completed = true, wasSkipped = false)
+                        }
                         if (duration > 0 && currentPos >= duration - 1500) {
                             nextTrack()
                         } else {
@@ -555,6 +558,12 @@ object MusicPlayerManager {
         p.playbackParameters = androidx.media3.common.PlaybackParameters(PLAYBACK_SPEED)
         p.playWhenReady = true
         p.prepare()
+        appContext?.let { ctx ->
+            MUSIC_ID?.let { id ->
+                val durationSec = (p.duration / 1000).coerceAtLeast(0L)
+                ListeningEventTracker.onTrackStarted(ctx, id, durationSec)
+            }
+        }
         showNotification()
         updateWidget()
     }
@@ -794,6 +803,10 @@ object MusicPlayerManager {
     }
 
     fun nextTrack() {
+        appContext?.let { ctx ->
+            val pos = player?.currentPosition ?: 0L
+            ListeningEventTracker.onTrackEnded(ctx, completed = false, wasSkipped = true, currentPositionMs = pos)
+        }
         val queue = trackQueue ?: return
         if (queue.isEmpty()) return
         val p = player ?: return
@@ -828,6 +841,10 @@ object MusicPlayerManager {
     }
 
     fun prevTrack() {
+        appContext?.let { ctx ->
+            val pos = player?.currentPosition ?: 0L
+            ListeningEventTracker.onTrackEnded(ctx, completed = false, wasSkipped = true, currentPositionMs = pos)
+        }
         val queue = trackQueue ?: return
         if (queue.isEmpty()) return
         val p = player ?: return
